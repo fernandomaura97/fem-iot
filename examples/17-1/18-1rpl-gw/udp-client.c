@@ -12,7 +12,7 @@
 #define UDP_CLIENT_PORT	8765
 #define UDP_SERVER_PORT	5678
 
-#define SEND_INTERVAL		  (15 * CLOCK_SECOND)
+#define SEND_INTERVAL		  (60 * CLOCK_SECOND)
 
 static struct simple_udp_connection udp_conn;
 
@@ -45,7 +45,6 @@ PROCESS_THREAD(udp_client_process, ev, data)
   static unsigned count;
   static char str[32];
   uip_ipaddr_t dest_ipaddr;
-  uint8_t is_reachable, root_found;
 
   PROCESS_BEGIN();
 
@@ -57,11 +56,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
   while(1) {
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
 
-    is_reachable = NETSTACK_ROUTING.node_is_reachable();
-    root_found = NETSTACK_ROUTING.get_root_ipaddr(&dest_ipaddr);
-
-    if(is_reachable && root_found) {
-      printf("aaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
+    if(NETSTACK_ROUTING.node_is_reachable() && NETSTACK_ROUTING.get_root_ipaddr(&dest_ipaddr)) {
       /* Send to DAG root */
       LOG_INFO("Sending request %u to ", count);
       LOG_INFO_6ADDR(&dest_ipaddr);
@@ -69,13 +64,8 @@ PROCESS_THREAD(udp_client_process, ev, data)
       snprintf(str, sizeof(str), "hello %d", count);
       simple_udp_sendto(&udp_conn, str, strlen(str), &dest_ipaddr);
       count++;
-}
-     if(!is_reachable) {
+    } else {
       LOG_INFO("Not reachable yet\n");
-    }
-
-    if(!root_found) {
-      LOG_INFO("Root not found\n");
     }
 
     /* Add some jitter */

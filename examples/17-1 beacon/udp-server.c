@@ -23,7 +23,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * This file is part of the Contiki operating system.
+ * This file is part of the Co 4 (Debug)ntiki operating system.
  *
  */
 
@@ -37,10 +37,11 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
 
-#define WITH_SERVER_REPLY  1
+#define WITH_SERVER_REPLY  0
 #define UDP_CLIENT_PORT	8765
 #define UDP_SERVER_PORT	5678
 
+uint8_t time = 5;
 static struct simple_udp_connection udp_conn;
 static struct etimer root_start_timer;
 
@@ -59,6 +60,16 @@ udp_rx_callback(struct simple_udp_connection *c,
   LOG_INFO("Received request '%.*s' from ", datalen, (char *) data);
   LOG_INFO_6ADDR(sender_addr);
   LOG_INFO_("\n");
+    
+  if (data[0] == 5 ){
+
+      printf("heieiei\n");
+
+      time = data[1];
+  
+  }
+
+
 #if WITH_SERVER_REPLY
   /* send back the same string to the client as an echo reply */
   LOG_INFO("Sending response.\n");
@@ -71,15 +82,20 @@ PROCESS_THREAD(udp_server_process, ev, data)
   PROCESS_BEGIN();
 
   /* Initialize DAG root */
-   etimer_set(&root_start_timer, 10 * CLOCK_SECOND);
-  while(NETSTACK_ROUTING.root_start() != 0) {
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&root_start_timer));
-    etimer_reset(&root_start_timer);
-  } 
+  
+  NETSTACK_ROUTING.root_start();
 
   /* Initialize UDP connection */
   simple_udp_register(&udp_conn, UDP_SERVER_PORT, NULL,
                       UDP_CLIENT_PORT, udp_rx_callback);
+                      
+  while(1){
+
+    etimer_set(&root_start_timer, time * CLOCK_SECOND);
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&root_start_timer));
+    printf("aiaiaiai\n");
+  }
+  
 
   PROCESS_END();
 }

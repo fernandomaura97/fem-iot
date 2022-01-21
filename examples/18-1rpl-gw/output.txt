@@ -1,0 +1,8 @@
+Script started on 2022-01-14 09:47:51+01:00 [TERM="xterm-256color" TTY="/dev/pts/6" COLUMNS="153" LINES="47"]
+]0;iotlab@iotlab-HeroBox: ~/Desktop/contiki-ng/examples/rpl-gw[01;32miotlab@iotlab-HeroBox[00m:[01;34m~/Desktop/contiki-ng/examples/rpl-gw[00m$ ls
+[0m[01;34mbuild[0m             [01;32mMakefile[0m         output.txt      [01;32mREADME.md[0m          [01;32mrpl-udp.resc[0m     [01;32mudp-client.c[0m
+[01;32mcc2538-node.resc[0m  [01;32mMakefile.target[0m  [01;32mproject-conf.h[0m  [01;32mrpl-udp-cooja.csc[0m  [01;32mrpl-udp-sky.csc[0m  [01;32mudp-gw.c[0m
+]0;iotlab@iotlab-HeroBox: ~/Desktop/contiki-ng/examples/rpl-gw[01;32miotlab@iotlab-HeroBox[00m:[01;34m~/Desktop/contiki-ng/examples/rpl-gw[00m$ exit
+exit
+
+Script done on 2022-01-14 09:48:13+01:00 [COMMAND_EXIT_CODE="0"]

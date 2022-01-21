@@ -1,0 +1,272 @@
+Script started on 2022-01-14 10:09:01+01:00 [TERM="xterm-256color" TTY="/dev/pts/7" COLUMNS="153" LINES="47"]
+]0;iotlab@iotlab-HeroBox: ~/Desktop/contiki-ng/examples/rpl-gw[01;32miotlab@iotlab-HeroBox[00m:[01;34m~/Desktop/contiki-ng/examples/rpl-gw[00m$ make login PORT=/dev/ttyUSB1
+using saved target 'zoul'
+rlwrap ../../tools/serial-io/serialdump -b115200 /dev/ttyUSB1
+connecting to /dev/ttyUSB1 [OK]
+[KThe concentration of CO is 12.04 ppm
+8
+PM10 value = 46 ppm
+[INFO: App       ]equest to fd00::212:4b00:60d:b6a8
+[KThe concentration of CO is 12.04 ppm
+4
+PM10 value = 46 ppm
+[INFO: App       ]equest to fd00::212:4b00:60d:b6a8
+[KThe concentration of NO2 is 1.50 ppm
+777 Sending to [INFO: App       ] Sending r[K777 Sending to [INFO: App       ] Sending r[K777 Sending to [INFO: App       ] Sending rThe concentration of CO is 11.98 ppm
+8
+PM10 value = 46 ppm
+[INFO: App       ] Sending to [INFO: App       ] Sending r[K[INFO: App       ] Sending to [INFO: App       ] Sending r[K[INFO: App       ] Sending to [INFO: App       ] Sending rThe concentration of NO2 is 1.51 ppm
+722 Sending to [INFO: App       ] Sending r[K722 Sending to [INFO: App       ] Sending r[K722 Sending to [INFO: App       ] Sending rThe concentration of CO is 11.98 ppm
+2
+PM10 value = 47 ppm
+[INFO: App       ]equest to fd00::212:4b00:60d:b6a8
+[KThe concentration of CO is 12.04 ppm
+4
+PM10 value = 47 ppm
+[INFO: App       ]equest to fd00::212:4b00:60d:b6a8
+[KThe concentration of CO is 11.98 ppm
+0
+PM10 value = 47 ppm
+[INFO: App       ]equest to fd00::212:4b00:60d:b6a8
+[KThe concentration of CO is 0.00 ppm
+The concentration of NO2 is 1.52 ppm
+803 Sending to [INFO: App       ] Sending r[K803 Sending to [INFO: App       ] Sending r[K803 Sending to [INFO: App       ] Sending rrpl-nbr[Krpl-nbr
+[K[KThe concentration of CO is 11.98 ppm
+[K80
+PM10 value = 47 ppm
+[INFO: App       ] Sending to [INFO: App       ] Sending [K[INFO: App       ] Sending to [INFO: App       ] Sending [K[INFO: App       ] Sending to [INFO: App       ] Sending The concentration of NO2 is 1.52 ppm
+663 Sending to [INFO: App       ] Sending r[K663 Sending to [INFO: App       ] Sending r[K663 Sending to [INFO: App       ] Sending rThe concentration of NO2 is 1.52 ppm
+767 Sending to [INFO: App       ] Sending r[K767 Sending to [INFO: App       ] Sending r[K767 Sending to [INFO: App       ] Sending rThe concentration of NO2 is 0.00 ppm
+684 Sending to [INFO: App       ] Sending r[K684 Sending to [INFO: App       ] Sending r[K684 Sending to [INFO: App       ] Sending rThe concentration of CO is 12.04 ppm
+[K0
+PM10 value = 47 ppm
+[INFO: App       ]equest to fd00::212:4b00:60d:b6a8
+[KThe concentration of CO is 12.04 ppm
+[K8
+PM10 value = 47 ppm
+[INFO: App       ]equest to fd00::212:4b00:60d:b6a8
+[KThe concentration of CO is 12.04 ppm
+[K Sending to [INFO: App       ] Sending r[K Sending to [INFO: App       ] Sending r[K Sending to [INFO: App       ] Sending rThe concentration of CO is 12.04 ppm
+[K6
+PM10 value = 47 ppm
+[INFO: App       ]equest to fd00::212:4b00:60d:b6a8
+[KThe concentration of NO2 is 1.52 ppm
+584equest to fd00::212:4b00:60d:b6a8
+[KThe concentration of CO is 12.10 ppm
+[K0
+PM10 value = 47 ppm
+[INFO: App       ]equest to fd00::212:4b00:60d:b6a8
+[KThe concentration of CO is 12.10 ppm
+[K8
+PM10 value = 47 ppm
+[INFO: App       ]equest to fd00::212:4b00:60d:b6a8
+[KThe concentration of CO is 12.10 ppm
+[K8
+PM10 value = 47 ppm
+[INFO: App       ]equest to fd00::212:4b00:60d:b6a8
+[KThe concentration of CO is 12.10 ppm
+[K8
+PM10 value = 47 ppm
+[INFO: App       ]equest to fd00::212:4b00:60d:b6a8
+[KThe concentration of CO is 12.10 ppm
+[K4
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 12.10 ppm
+[K6
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 12.10 ppm
+[KThe concentration of CO is 12.10 ppm
+[K2
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 12.04 ppm
+[K4
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 12.04 ppm
+[KThe concentration of NO2 is 1.53 ppm
+7692
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 12.04 ppm
+[KThe concentration of NO2 is 1.53 ppm
+730 Not reachable yet
+[KThe concentration of NO2 is 1.53 ppm
+766 Not reachable yet
+[KThe concentration of NO2 is 1.53 ppm
+608 Not reachable yet
+[KThe concentration of NO2 is 1.53 ppm
+654[K654[K654The concentration of CO is 12.04 ppm
+[KThe concentration of NO2 is 1.53 ppm
+653 Not reachable yet
+[KThe concentration of NO2 is 1.53 ppm
+718 Not reachable yet
+[KThe concentration of NO2 is 1.53 ppm
+744[K744[K744The concentration of CO is 12.04 ppm
+[KThe concentration of NO2 is 1.53 ppm
+856 Not reachable yet
+[KThe concentration of CO is 12.04 ppm
+[K4
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 12.04 ppm
+[KThe concentration of NO2 is 1.54 ppm
+756 Not reachable yet
+[KThe concentration of NO2 is 1.54 ppm
+888 Not reachable yet
+[KThe concentration of NO2 is 1.54 ppm
+566 Not reachable yet
+[KThe concentration of NO2 is 1.54 ppm
+732 Not reachable yet
+[KThe concentration of NO2 is 1.54 ppm
+718 Not reachable yet
+[K2
+PM10 value = 47 ppm
+[INFO: App       ] Not reachable yet
+[K40
+PM10 value = 47 ppm
+[INFO: App       [K[INFO: App       [K[INFO: App       The concentration of CO is 11.98 ppm
+[K8
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.98 ppm
+[KThe concentration of NO2 is 1.54 ppm
+604 Not reachable yet
+[KThe concentration of CO is 11.98 ppm
+[K2
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.98 ppm
+[K6
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.98 ppm
+[K6
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of NO2 is 1.54 ppm
+586 Not reachable yet
+[KThe concentration of NO2 is 1.54 ppm
+7396
+PM10 value = 47 ppm
+[INFO: App       ] Not reachable yet
+[K8
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.98 ppm
+[K8
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[K2
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of NO2 is 1.55 ppm
+681 Not reachable yet
+[KThe concentration of NO2 is 1.55 ppm
+664 Not reachable yet
+[KThe concentration of NO2 is 1.55 ppm
+7332
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.98 ppm
+[K4
+PM10 value = 47 ppm
+[INFO: App       ] Not reachable yet
+[KThe concentration of NO2 is 1.55 ppm
+692 Not reachable yet
+[KThe concentration of NO2 is 1.55 ppm
+617 Not reachable yet
+[KThe concentration of NO2 is 1.54 ppm
+689 Not reachable yet
+[KThe concentration of CO is 11.98 ppm
+[K6
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.98 ppm
+[K4
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[KThe concentration of CO is 11.92 ppm
+[K6
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of NO2 is 1.55 ppm
+576 Not reachable yet
+[KThe concentration of NO2 is 1.55 ppm
+724 Not reachable yet
+[KThe concentration of CO is 11.92 ppm
+[K4
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of NO2 is 1.54 ppm
+730 Not reachable yet
+[KThe concentration of NO2 is 1.54 ppm
+640 Not reachable yet
+[KThe concentration of CO is 11.92 ppm
+[K8
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[K0
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[K2
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[K6
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[K8
+PM10 value = 47 ppm
+[INFO: App       ] Not reachable yet
+[KThe concentration of NO2 is 1.52 ppm
+652 Not reachable yet
+[KThe concentration of NO2 is 1.52 ppm
+627 Not reachable yet
+[KThe concentration of NO2 is 1.52 ppm
+567 Not reachable yet
+[KThe concentration of CO is 11.92 ppm
+[K6
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of NO2 is 1.52 ppm
+638 Not reachable yet
+[K4
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[KThe concentration of NO2 is 0.00 ppm[KThe concentration of NO2 is 0.00 ppm[KThe concentration of NO2 is 0.00 ppm
+687[K687[K687The concentration of CO is 11.92 ppm
+[K2
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[KThe concentration of CO is 11.92 ppm
+[KThe concentration of NO2 is 1.52 ppm
+522 Not reachable yet
+[KThe concentration of CO is 11.92 ppm
+[K64
+PM10 value = 47 ppm
+[INFO: App       [K[INFO: App       [K[INFO: App       The concentration of CO is 11.92 ppm
+[K6
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[KThe concentration of NO2 is 1.53 ppm
+845 Not reachable yet
+[KThe concentration of CO is 11.92 ppm
+[K8
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[K84
+PM10 value = 47 ppm
+[INFO: App       [K[INFO: App       [K[INFO: App       The concentration of CO is 11.92 ppm
+[K2
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[K4
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[K2
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[KThe concentration of CO is 11.92 ppm
+[K2
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[K4
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of CO is 11.92 ppm
+[K0
+PM10 value = 47 ppm
+[INFO: App       ][K[INFO: App       ][K[INFO: App       ]The concentration of NO2 is 1.53 ppm
+906 Not reachable yet
+[KThe concentration of NO2 is 1.53 ppm
+748 Not reachable yet
+[KThe concentration of NO2 is 1.53 ppm
+978 Not reachable yet
+[Kelease/v4.7-43-g999b0d85f-dirty
+[INFO: Min      ] - Net: sicslowpan
+[INFO: Main 802.15.4 PANID: 0xabcd
+[INFO: Main      [K[INFO: Main      serial device disconnected: Bad file des
