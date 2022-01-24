@@ -57,7 +57,7 @@ PROCESS_THREAD(MQ131_TEST, ev, data)
   uint8_t is_reachable, root_found;
 
   PROCESS_BEGIN();
-  //SENSORS_ACTIVATE(MQ131_sensor);
+ 
 	
 /*----------------------------------------------*/
 	// Init the sensor
@@ -65,32 +65,42 @@ PROCESS_THREAD(MQ131_TEST, ev, data)
 	// - Sensor analog read on pin A0
 	// - Model LOW_CONCENTRATION
 	// - Load resistance RL of 1MOhms (1000000 Ohms)
-	
+	simple_udp_register(&udp_conn, UDP_CLIENT_PORT, NULL,
+                      UDP_SERVER_PORT, udp_rx_callback);
 
         //MQ131_sensor.configure(SENSORS_ACTIVE, ADC_PIN);
 	adc_zoul.configure(SENSORS_HW_INIT, ZOUL_SENSORS_ADC_ALL);
-	
+	etimer_set(&timer, CLOCK_SECOND * 5);
+
+  	PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
+
 
 	//printf("ADC3 = %d raw\n", adc_zoul.value(ZOUL_SENSORS_ADC3));
 
 	MQbegin(2,2,1000000);
+	
 
 	printf("Calibrando...\n");
-	MQ_calibrate();
-	printf("Calibrado!\n");
-	printf("tiempo de calientamiento = %ld  segundos", MQ_getTimeToRead());
-	etimer_set(&timer, CLOCK_SECOND *20);
+	//MQ_calibrate();
+	printf("pausa1");
 	
-	simple_udp_register(&udp_conn, UDP_CLIENT_PORT, NULL,
-                      UDP_SERVER_PORT, udp_rx_callback);
+	printf("Calibrado!\n");
+	//printf("tiempo de calientamiento = %ld  segundos", MQ_getTimeToRead());
+	
+	
+	
 
 	while(1) {
 		 
+
+		 printf("aqyuuuuu\n");
+
 
 		  //int val = MQ131_SENSOR.value();
 	          //printf("%d", val);		  
 		  MQ_sample();
 		  
+		  printf("aaaaaa");
 
 		  float ppm = MQ_getO3(PPM);
  		  
@@ -98,18 +108,12 @@ PROCESS_THREAD(MQ131_TEST, ev, data)
 		//char ppb_[20]; 
 		//char mg_m3_[20];
 		//char ug_m3_[20];
-		char fractional_part[5];
+			char fractional_part[5];
 
 		sprintf(fractional_part, "%d", (int)((ppm - (int)ppm + 1.0) * 1000));
 		snprintf(ppm_, sizeof(ppm_),"\"ppm\" : %d.%s", (int)ppm, &fractional_part[1]);
 		printf("%s\n", ppm_);
-		 
-		
-		PROCESS_PAUSE();
 
-
-
-			
     /* Wait for the periodic timer to expire and then restart the timer. */
    //ipv6 send
 	is_reachable = NETSTACK_ROUTING.node_is_reachable();

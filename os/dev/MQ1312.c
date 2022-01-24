@@ -59,6 +59,7 @@
 #include "adc-zoul.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
 
@@ -108,7 +109,7 @@ uint32_t delta = 15000;
  */
 
 	
-bool MQ_enableDebug = false; //enable debug to 1
+bool MQ_enableDebug = true; //enable debug to 1
 	
 
 /**
@@ -228,25 +229,12 @@ void MQ_setTimeToRead(uint32_t sec) { 	secToRead = sec;  }
    */
 
 float MQ_readRs() {
- 	// Read the value
 
-	
 	uint16_t valueSensor= adc_zoul.value(ZOUL_SENSORS_ADC3);
-
-	//printf("La lectura dice que %u \n", (unsigned int)valueSensor);
- 	// Compute the voltage on load resistance (for 5V Arduino)
-
-
 	float vRL = (float)valueSensor/ 16384.0 * 5.0; //16384 bits en adc cc2538
-	 
-	
-  	if(!vRL) return 0.0f; //division by zero prevention
+	if(!vRL) return 0.0f; //division by zero prevention
  	
-	float rS = (5.0 / vRL - 1.0) * 1000000.0; //Ohms
-	
-	//printf("rs es %u \n", (unsigned int)rS); ////////NO PRINTEA
-
-	//printf("La lectura dice que %d \n", valueSensor);
+	float rS = (5.0 / vRL - 1.0) * 1000000.0; // TO BE CHANGED IN CALIBRATION
 	return rS;
   }
 
@@ -299,7 +287,7 @@ float MQ_getO3(MQ131Unit unit, float rs) {
   float ratio = 0.0;
   //float buf_O3 = MQ_convert(9.4783 * pow(ratio, 2.3348), PPB, unit);
   //ratio=lastValueRs / valueR0 * MQ_getEnvCorrectRatio();
-  ratio = rs /  235.0  * MQ_getEnvCorrectRatio();
+  ratio = rs /  valueR0  * MQ_getEnvCorrectRatio();
 
   return MQ_convert(9.4783 * pow(ratio, 2.3348), PPB, unit);
 	}
@@ -423,7 +411,7 @@ void MQ_calibrate() {
       printf(" Ohms\n");
     }
    //if((uint32_t)lastRsValue != (uint32_t)value && (uint32_t)lastLastRsValue != (uint32_t)value){ ////////////PROBAR PROBAR 
-   if((((uint32_t)lastRsValue - (uint32_t)value)> delta) && (((uint32_t)lastLastRsValue - (uint32_t)value)> delta)){ ////////////PROBAR PROBAR
+   if((abs(lastRsValue - value)> delta) && ((abs(lastLastRsValue - value))> delta)){ ////////////PROBAR PROBAR
 	    lastLastRsValue = lastRsValue;
 	    lastRsValue = value;
 		if (countReadInRow<= 8){
@@ -438,7 +426,7 @@ void MQ_calibrate() {
 			
 	else { countReadInRow++;}
 	count++;
-	clock_wait(0.5*CLOCK_SECOND);
+	clock_wait(CLOCK_SECOND);
 	}
 
   if(MQ_enableDebug) {

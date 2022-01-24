@@ -30,6 +30,37 @@ static sensordata_t sensordata;
 
 bool flag = 0; 
 
+void putLong(long x)
+{
+    if(x < 0)
+    {
+        putchar('-');
+        x = -x;
+    }
+    if (x >= 10) 
+    {
+        putLong(x / 10);
+    }
+    putchar(x % 10+'0');
+}
+
+
+void putFloat( float f, tPrecision p )
+{
+    long i = (long)f ;
+    putLong( i ) ;
+    f = (f - i) * p ;
+    i = abs((long)f) ;
+    if( fabs(f) - i >= 0.5f )
+    {
+        i++ ;
+    }
+    putchar('.') ;
+    putLong( i ) ;
+    putchar('\n') ;
+}
+
+
 /*---------------------------------------------------------------------------*/
 PROCESS(nullnet_example_process, "NullNet broadcast example");
 AUTOSTART_PROCESSES(&nullnet_example_process);
