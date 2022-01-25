@@ -58,7 +58,7 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
 
-#define WITH_SERVER_REPLY  1
+#define WITH_SERVER_REPLY  0
 #define UDP_CLIENT_PORT	8765
 #define UDP_SERVER_PORT	5678
 static struct simple_udp_connection udp_conn;
@@ -120,8 +120,8 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
     if(dht22_read_all(&temperature, &humidity) != DHT22_ERROR) {
       //printf("\"Temperature\": %02d.%02d, ", temperature / 10, temperature % 10);
       //printf("\"Humidity\": %02d.%02d ", humidity / 10, humidity % 10);
-      snprintf(temp, sizeof(temp), "\"Temperature\": %02d.%02d", temperature / 10, temperature % 10);
-      snprintf(hums, sizeof(hums), "\"Humidity\": %02d.%02d ", humidity / 10, humidity % 10);
+      snprintf(temp, sizeof(temp), "\"Temperature\": %02d.%d", temperature / 10, temperature % 10);
+      snprintf(hums, sizeof(hums), "\"Humidity\": %02d.%d ", humidity / 10, humidity % 10);
     } else {
       printf("Failed to read the sensor\n");
     }
