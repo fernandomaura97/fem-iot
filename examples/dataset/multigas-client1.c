@@ -128,7 +128,7 @@ while(1) {
     }
 
     printf(" avg_loud %lu\n", avg_loud/100);
-    snprintf(louds, sizeof(louds), "\"Noise\": %lu", avg_loud);
+    snprintf(louds, sizeof(louds), "\"Noise\": %lu", avg_loud/100);
 //Sample PM10
     
   //Sample Multichannel gas sensor

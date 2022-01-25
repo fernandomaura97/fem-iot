@@ -42,6 +42,7 @@
 static struct simple_udp_connection udp_conn;
 static uint32_t avg_loud;
 static int im = 0;
+static float c__;
 
 
 //#define SENSOR_READ_INTERVAL (10*CLOCK_SECOND)
@@ -116,11 +117,24 @@ while(1) {
   etimer_set(&timer, CLOCK_SECOND * 110);
   PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
 
+
+   avg_loud = 0; 
+   
+    for(im = 0; im < 100; im++)
+    { 
+      etimer_set(&timer, CLOCK_SECOND * 0.1);
+      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
+      avg_loud += (adc_sensors.value(ANALOG_GROVE_LOUDNESS));
+    }
+
+    printf(" avg_loud %lu\n", avg_loud/100);
+    snprintf(louds, sizeof(louds), "\"Noise\": %lu", avg_loud/100);
+//Sample PM10
     
   //Sample Multichannel gas sensor
     i2c_master_enable();
       
-    float c__; 			
+     			
     char co_[20];
     char no2_[20];
     char fractional_part[5];
@@ -144,18 +158,7 @@ while(1) {
     snprintf(no2_, sizeof(no2_),"\"no2\": %d.%s", (int)c__, &fractional_part[1]);
     
   //Sample Loudness sensor   
-    avg_loud = 0; 
    
-    for(im = 0; im < 100; im++)
-    { 
-      etimer_set(&timer, CLOCK_SECOND * 0.1);
-      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
-      avg_loud += (adc_sensors.value(ANALOG_GROVE_LOUDNESS));
-    }
-
-    printf(" avg_loud %lu\n", avg_loud/100);
-    snprintf(louds, sizeof(louds), "\"Noise\": %lu", avg_loud);
-//Sample PM10
 
   pm10_value = pm10.value(1);
 
@@ -187,7 +190,7 @@ while(1) {
       LOG_INFO_6ADDR(&dest_ipaddr);
       LOG_INFO_("\n");
       //snprintf(str3,sizeof(str3), "{%s,%s,%s,%s,%s,%s}", co_, no2_, temp, hums, pm10s, louds );  //prepare JSON string
-	    snprintf(str3,sizeof(str3), "{\"nodeID\": \"2\",%s,%s,%s,%s}", co_, no2_, pm10s, louds );  //prepare JSON string
+	    snprintf(str3,sizeof(str3), "{\"nodeID\": \"3\",%s,%s,%s,%s}", co_, no2_, pm10s, louds );  //prepare JSON string
       
       simple_udp_sendto(&udp_conn, str3, sizeof(str3), &dest_ipaddr); 
       }    

@@ -11,10 +11,6 @@
 
 #include "sys/log.h"
 
-
-
-
-
 #include "dev/adc-sensors.h"
 #include "lib/sensors.h"
 
