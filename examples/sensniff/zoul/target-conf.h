@@ -34,7 +34,7 @@
 /*---------------------------------------------------------------------------*/
 /* Set to 1 for a sub-ghz sniffer with the CC1200 */
 #ifndef ZOUL_CONF_SUB_GHZ_SNIFFER
-#define ZOUL_CONF_SUB_GHZ_SNIFFER     0
+#define ZOUL_CONF_SUB_GHZ_SNIFFER     1
 #endif
 /*---------------------------------------------------------------------------*/
 #if ZOUL_CONF_SUB_GHZ_SNIFFER
