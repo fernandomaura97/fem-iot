@@ -34,11 +34,11 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "sys/log.h"
+/*#include "sys/log.h"
 
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_DBG
-
+*/
 #define NODEID_MGAS1 1
 #define NODEID_DHT22_1 2
 #define NODEID_MGAS2 3
@@ -106,7 +106,7 @@ void putFloat( float f, tPrecision p )
     }
     putchar('.') ;
     putLong( i ) ;
-    putchar('\n') ;
+    
 }
 
 
@@ -115,9 +115,9 @@ void putFloat( float f, tPrecision p )
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {
-  printf("received %d bytes: \n", len);
-  //log_bytes(data, len);
-  uint8_t *buf1 = (uint8_t *)malloc(sizeof(uint8_t) + 2*sizeof(float)); //allocate 9bytes (multigas)
+  //printf("received %d bytes: \n", len);
+  
+  uint8_t *buf1 = (uint8_t *)malloc(sizeof(uint8_t) + 2*sizeof(float)); //allocate 9bytes (maximum payload)
   memcpy(buf1, data, len);
   
   
@@ -144,7 +144,7 @@ void input_callback(const void *data, uint16_t len,
       
       case NODEID_MGAS1:
       case NODEID_MGAS2:
-        printf("mgas1\n");
+        //printf("mgas1\n");
         
         u.temp_array[0] = buf1[1];
         u.temp_array[1] = buf1[2];
@@ -161,7 +161,7 @@ void input_callback(const void *data, uint16_t len,
 
         //memcpy??
 
-        printf("{\"nodeid\": %d, ", buf1[0]);
+        printf("{\"nodeid\": %d", buf1[0]);
         printf(",\"co\": ");
         putFloat(sensors.co, DEC2);
         printf(", \"no2\": ");
@@ -171,9 +171,9 @@ void input_callback(const void *data, uint16_t len,
       
       case NODEID_DHT22_1:
       case NODEID_DHT22_2:
-        printf("dht22_%d\n", buf1[0]);
+       //printf("dht22: %d\n", buf1[0]);
 
-        printf("buf[1] %d buf[2] %d", buf1[1], buf1[2]);
+        //printf("buf[1] %d buf[2] %d", buf1[1], buf1[2]);
         ua2.temp_array[0] = buf1[1];
         ua2.temp_array[1] = buf1[2];
         
@@ -192,7 +192,7 @@ void input_callback(const void *data, uint16_t len,
         memcpy(&sensors.noise, &ua.u32_var, sizeof(uint32_t));
 
         //JSON conversion
-        printf("{\"nodeid\": %d, ", buf1[0]);
+        printf("{\"nodeid\": %d", buf1[0]);
         printf(",\"humidity\": %02d.%d, ", sensors.humidity/10, sensors.humidity%10);
         printf(",\"temperature\": %02d.%d, ", sensors.temperature/10, sensors.temperature%10);
         printf(",\"noise\": %lu", sensors.noise);
@@ -203,22 +203,15 @@ void input_callback(const void *data, uint16_t len,
          
       case NODEID_O3_1:
       case NODEID_O3_2:
-        //sensors.temperature = (buf1[1] & 0xFF)+ ((buf1[2]&0xFF)<<8);
-        //sensors.humidity = (buf1[4] << 8) | buf1[3];
         
-
-        //memcpy(&sensors.temperature, &buf1[1], sizeof(int16_t));
-        //memcpy(&sensors.humidity, &buf1[3], sizeof(int16_t));
-
-        printf("buf[1] %d buf[2] %d", buf1[1], buf1[2]);
         ua2.temp_array[0] = buf1[1];
         ua2.temp_array[1] = buf1[2];
         
         memcpy(&sensors.temperature, &ua2.u16_var, sizeof(int16_t)); 
-    //now in reverse
+    
 
-        ua2.temp_array[0] = buf1[4];
-        ua2.temp_array[1] = buf1[3];
+        ua2.temp_array[0] = buf1[3];
+        ua2.temp_array[1] = buf1[4];
         memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
 
         u.temp_array[0] = buf1[5];
@@ -228,19 +221,19 @@ void input_callback(const void *data, uint16_t len,
         
         //sensors.o3 = u.float_variable;
         memcpy(&sensors.o3, &u.float_variable, sizeof(float));
-        printf("{\"nodeid\": %d, ", buf1[0]);
+        printf("{\"nodeid\": %d", buf1[0]);
         printf(",\"o3\": ");
         putFloat(sensors.o3, DEC2);
-        printf(", \"humidity\": %02d.%d, ", sensors.humidity/10, sensors.humidity%10);
+        printf(", \"humidity\": %02d.%d", sensors.humidity/10, sensors.humidity%10);
         printf(",\"temperature\": %02d.%d", sensors.temperature/10, sensors.temperature%10);
         printf("}\n");
         break;
 
       case NODEID_PM10_1:
       case NODEID_PM10_2:
-        printf("pm10: %d\n", buf1[0]);
+        //printf("pm10: %d\n", buf1[0]);
         sensors.pm10 = (buf1[2] << 8) | buf1[1];
-        printf("{\"nodeid\": %d, ", buf1[0]);
+        printf("{\"nodeid\": %d", buf1[0]);
         printf(",\"pm10\": %d", sensors.pm10);
         printf("}\n");
         break;
@@ -252,12 +245,12 @@ void input_callback(const void *data, uint16_t len,
     } //switch
      
   
-  printf("data copied is: ");
+  /*printf("BYTES copied are: ");
   for (int i = 0; i < len; i++) {
         printf("%d ", buf1[i]);
       }
   printf("\n\n");
-
+*/
   free(buf1);
  } //callback
  

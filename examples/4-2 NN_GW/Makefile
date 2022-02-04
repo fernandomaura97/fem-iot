@@ -1,4 +1,4 @@
-CONTIKI_PROJECT = dht22-TS1 dht22-TS2 mq131-node1 mq131-node2 multigas-client1 multigas-client2 udp-gw string-gw dht22-dbg gw-dbg
+CONTIKI_PROJECT = NN-gw dht_noise1 dht_noise2 mq131_env1 mq131_env2 multigas-client1 multigas-client2 PM10_1 PM10_2
 
 all: $(CONTIKI_PROJECT)
 
