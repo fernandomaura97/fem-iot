@@ -26,6 +26,10 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
 
+#define SAMPLE_RATE (150* CLOCK_SECOND)
+#define ADC_PIN              2
+
+
 
 #define NODEID_MGAS1 1
 #define NODEID_DHT22_1 2
@@ -36,7 +40,7 @@
 #define NODEID_PM10_1 7
 #define NODEID_PM10_2 8
 
-#define OWN_NODEID NODEID_O3_1
+#define OWN_NODEID NODEID_O3_2
 
 
 
@@ -56,8 +60,6 @@ typedef enum
     DEC6 = 1000000,
 
 } tPrecision ;
-#define SENSOR_READ_INTERVAL (10*CLOCK_SECOND)
-#define ADC_PIN              2
 
 
 static struct {
@@ -119,23 +121,23 @@ float MQQ_getEnvCorrectRatio(int16_t t, int16_t hum) {
  	// Humidity < 50%, use the 30% curve
   // R^2 = 0.9986
  	else{
-		 return -0.0141 * temperatureCelsuis + 1.5623;
+		 return -0.0141 * temperature + 1.5623;
 	 }	
  }
 
 float ReadRs(){
 
     uint16_t valueSensor= adc_zoul.value(ZOUL_SENSORS_ADC3);
-    printf("Valor de sensor: %d\n", valueSensor);
+    printf("Valor de sensor: %u\n", valueSensor);
 
     float fvaluesensor = valueSensor;
-    float vRL = (fvaluesensor / 16384.0)* 5.0 ; //16384 bits adc, 2¹⁴ 
+    float vRL = (fvaluesensor / 16384.0)* 5.1 ; //16384 bits adc, 2¹⁴ /5.1V 
     
     printf("Valor de VRL:");
     putFloat(vRL, DEC3);
     printf("\n");
 
-    float rS = (5.0 / vRL - 1.0) * 1000000.0;  // 1MOhm == R0 hardcoded value, fix with calibration
+    float rS = (5.0 / vRL - 1.0) * 1000000.0;  // 1MOhm ==  Value R_l 
 
     /*printf("Valor de RS - hardc:");
     putFloat(rS, DEC3);
@@ -146,8 +148,6 @@ float ReadRs(){
 void calibrate(){
 
   //wait until adc stabilyzed, then assign lastRsvalue to R0
-
-  
   float fmeasurement = ReadRs();
 
   calib_s.R0 = fmeasurement; 
@@ -195,37 +195,18 @@ PROCESS_THREAD(udp_client_process, ev, data)
 	//MQ131_sensor.configure(S/if((uint32_t)lastRsValue != (uint32_t)value && (uint32_t)lastLastRsValue != (uint32_t)value){ ////////////PROBAR PROBAR 
 
 	//adc_zoul.configure(SENSORS_HW_INIT, ZOUL_SENSORS_ADC_ALL);
-  adc_zoul.configure(SENSORS_HW_INIT, ZOUL_SENSORS_ADC3); /////////CHECK OUT
+  adc_zoul.configure(SENSORS_HW_INIT, ZOUL_SENSORS_ADC3);
 
   printf("Calibrando...\n");
   calibrate(); 
   printf("Calibrado!\n");
     
   while(1) {
-  etimer_set(&timy, SENSOR_READ_INTERVAL);
+  etimer_set(&timy, SAMPLE_RATE);
   
   PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timy));
 
-
-  if(dht22_read_all(&temperature, &humidity) != DHT22_ERROR) {
-      printf("\"Temperature\": %02d.%d, ", temperature / 10, temperature % 10);
-      printf("\"Humidity\": %02d.%d ", humidity / 10, humidity % 10);
-
-      
-
-      printf("nodeid = %d\n", buf[0]);
-
-     
-      buf[1] = temperature & 0xFF;
-      buf[2] = (temperature >> 8) & 0xFF;
-      buf[3] = humidity & 0xFF;
-      buf[4] = (humidity >> 8) & 0xFF;
-  }
-
-  else{
-    printf("Error reading DHT22\n");
-  }     
-
+  
   float rs = ReadRs();
 
   float enviratio = MQQ_getEnvCorrectRatio(temperature, humidity);
@@ -244,6 +225,28 @@ PROCESS_THREAD(udp_client_process, ev, data)
   buf[6] = u.temp_array[1];
   buf[7] = u.temp_array[2];
   buf[8] = u.temp_array[3];
+
+  if(dht22_read_all(&temperature, &humidity) != DHT22_ERROR) {
+      printf("\"Temperature\": %02d.%d, ", temperature / 10, temperature % 10);
+      printf("\"Humidity\": %02d.%d ", humidity / 10, humidity % 10);
+
+      
+
+      printf("nodeid = %d\n", buf[0]);
+
+     
+      buf[1] = temperature & 0xFF;
+      buf[2] = (temperature >> 8) & 0xFF;
+      buf[3] = humidity & 0xFF;
+      buf[4] = (humidity >> 8) & 0xFF;
+  }
+
+  else{
+    printf("Error reading DHT22\n");
+    printf("rebooting...\n");
+    //watchdog_reboot();
+    adc_zoul.configure(SENSORS_HW_INIT, ZOUL_SENSORS_ADC3); //por si acaso
+  }     
 
   nullnet_buf = (uint8_t *)&buf;
   nullnet_len = sizeof(buf);

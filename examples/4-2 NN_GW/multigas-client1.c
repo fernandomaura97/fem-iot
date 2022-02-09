@@ -21,7 +21,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#define SAMPLE_RATE 120
+#define SAMPLE_RATE 150
 #define NODEID_MGAS1 1
 #define NODEID_DHT22_1 2
 #define NODEID_MGAS2 3

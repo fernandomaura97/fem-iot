@@ -59,7 +59,7 @@
 #include "sys/log.h"
 #include "stdlib.h"
 
-#define SAMPLE_RATE 110
+#define SAMPLE_RATE 140
 
 #define NODEID_MGAS1 1
 #define NODEID_DHT22_1 2
@@ -165,6 +165,8 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
       
     } else {
       printf("Failed to read the sensor\n");
+      adc_sensors.configure(ANALOG_GROVE_LOUDNESS, ADC_PIN1); //Just in case, adc's get stuck otherwise
+
     }
     
      nullnet_buf = (uint8_t *)&buf2; //assign pointer to the buffer

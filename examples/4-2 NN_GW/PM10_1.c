@@ -61,7 +61,7 @@
 #include "dev/adc-sensors.h"
 #include "lib/sensors.h"
 
-#define SAMPLE_RATE 120
+#define SAMPLE_RATE 150
 #define ADC_PIN2	      2
 
 #define NODEID_MGAS1 1

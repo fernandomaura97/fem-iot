@@ -26,6 +26,10 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
 
+#define SAMPLE_RATE (150* CLOCK_SECOND)
+#define ADC_PIN              2
+
+
 
 #define NODEID_MGAS1 1
 #define NODEID_DHT22_1 2
@@ -56,8 +60,6 @@ typedef enum
     DEC6 = 1000000,
 
 } tPrecision ;
-#define SAMPLE_RATE (120* CLOCK_SECOND)
-#define ADC_PIN              2
 
 
 static struct {
@@ -193,7 +195,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
 	//MQ131_sensor.configure(S/if((uint32_t)lastRsValue != (uint32_t)value && (uint32_t)lastLastRsValue != (uint32_t)value){ ////////////PROBAR PROBAR 
 
 	//adc_zoul.configure(SENSORS_HW_INIT, ZOUL_SENSORS_ADC_ALL);
-  adc_zoul.configure(SENSORS_HW_INIT, ZOUL_SENSORS_ADC3); /////////CHECK OUT
+  adc_zoul.configure(SENSORS_HW_INIT, ZOUL_SENSORS_ADC3);
 
   printf("Calibrando...\n");
   calibrate(); 
@@ -204,26 +206,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
   
   PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timy));
 
-
-  if(dht22_read_all(&temperature, &humidity) != DHT22_ERROR) {
-      printf("\"Temperature\": %02d.%d, ", temperature / 10, temperature % 10);
-      printf("\"Humidity\": %02d.%d ", humidity / 10, humidity % 10);
-
-      
-
-      printf("nodeid = %d\n", buf[0]);
-
-     
-      buf[1] = temperature & 0xFF;
-      buf[2] = (temperature >> 8) & 0xFF;
-      buf[3] = humidity & 0xFF;
-      buf[4] = (humidity >> 8) & 0xFF;
-  }
-
-  else{
-    printf("Error reading DHT22\n");
-  }     
-
+  
   float rs = ReadRs();
 
   float enviratio = MQQ_getEnvCorrectRatio(temperature, humidity);
@@ -242,6 +225,28 @@ PROCESS_THREAD(udp_client_process, ev, data)
   buf[6] = u.temp_array[1];
   buf[7] = u.temp_array[2];
   buf[8] = u.temp_array[3];
+
+  if(dht22_read_all(&temperature, &humidity) != DHT22_ERROR) {
+      printf("\"Temperature\": %02d.%d, ", temperature / 10, temperature % 10);
+      printf("\"Humidity\": %02d.%d ", humidity / 10, humidity % 10);
+
+      
+
+      printf("nodeid = %d\n", buf[0]);
+
+     
+      buf[1] = temperature & 0xFF;
+      buf[2] = (temperature >> 8) & 0xFF;
+      buf[3] = humidity & 0xFF;
+      buf[4] = (humidity >> 8) & 0xFF;
+  }
+
+  else{
+    printf("Error reading DHT22\n");
+    printf("rebooting...\n");
+    //watchdog_reboot();
+    adc_zoul.configure(SENSORS_HW_INIT, ZOUL_SENSORS_ADC3); //por si acaso
+  }     
 
   nullnet_buf = (uint8_t *)&buf;
   nullnet_len = sizeof(buf);

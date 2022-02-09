@@ -61,7 +61,7 @@
 #include "dev/adc-sensors.h"
 #include "lib/sensors.h"
 
-
+#define SAMPLE_RATE 150
 #define ADC_PIN2	      2
 
 #define NODEID_MGAS1 1
@@ -73,7 +73,8 @@
 #define NODEID_PM10_1 7
 #define NODEID_PM10_2 8
 
-#define OWN_NODEID NODEID_PM10_1
+#define OWN_NODEID NODEID_PM10_2
+
 
 
 #define LOG_MODULE "App"
@@ -118,7 +119,7 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
   /* Let it spin and read sensor data */
 
   while(1) {
-    etimer_set(&et, 5*CLOCK_SECOND);
+    etimer_set(&et, SAMPLE_RATE*CLOCK_SECOND);
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
     pm10_value = pm10.value(1);
 

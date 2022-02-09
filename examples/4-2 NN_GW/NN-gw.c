@@ -161,7 +161,7 @@ void input_callback(const void *data, uint16_t len,
 
         //memcpy??
 
-        printf("{\"nodeid\": %d", buf1[0]);
+        printf("{\"nodeID\": %d", buf1[0]);
         printf(",\"co\": ");
         putFloat(sensors.co, DEC2);
         printf(", \"no2\": ");
@@ -192,10 +192,10 @@ void input_callback(const void *data, uint16_t len,
         memcpy(&sensors.noise, &ua.u32_var, sizeof(uint32_t));
 
         //JSON conversion
-        printf("{\"nodeid\": %d", buf1[0]);
-        printf(",\"humidity\": %02d.%d, ", sensors.humidity/10, sensors.humidity%10);
-        printf(",\"temperature\": %02d.%d, ", sensors.temperature/10, sensors.temperature%10);
-        printf(",\"noise\": %lu", sensors.noise);
+        printf("{\"nodeID\": %d", buf1[0]);
+        printf(",\"Humidity\": %02d.%d", sensors.humidity/10, sensors.humidity%10);
+        printf(",\"Temperature\": %02d.%d", sensors.temperature/10, sensors.temperature%10);
+        printf(",\"Noise\": %lu", sensors.noise);
         printf("}\n");
 
         //ALL GOOD!
@@ -221,11 +221,11 @@ void input_callback(const void *data, uint16_t len,
         
         //sensors.o3 = u.float_variable;
         memcpy(&sensors.o3, &u.float_variable, sizeof(float));
-        printf("{\"nodeid\": %d", buf1[0]);
-        printf(",\"o3\": ");
-        putFloat(sensors.o3, DEC2);
-        printf(", \"humidity\": %02d.%d", sensors.humidity/10, sensors.humidity%10);
-        printf(",\"temperature\": %02d.%d", sensors.temperature/10, sensors.temperature%10);
+        printf("{\"nodeID\": %d", buf1[0]);
+        printf(",\"ppm\": ");
+        putFloat(sensors.o3, DEC3);
+        printf(", \"Humidity\": %02d.%d", sensors.humidity/10, sensors.humidity%10);
+        printf(",\"Temperature\": %02d.%d", sensors.temperature/10, sensors.temperature%10);
         printf("}\n");
         break;
 
@@ -233,14 +233,21 @@ void input_callback(const void *data, uint16_t len,
       case NODEID_PM10_2:
         //printf("pm10: %d\n", buf1[0]);
         sensors.pm10 = (buf1[2] << 8) | buf1[1];
-        printf("{\"nodeid\": %d", buf1[0]);
+        printf("{\"nodeID\": %d", buf1[0]);
         printf(",\"pm10\": %d", sensors.pm10);
         printf("}\n");
         break;
         //AOK!!
       
       default:
-        printf("unknown nodeid %d\n", buf1[0]);
+        /*printf("unknown nodeID %d\n", buf1[0]);
+        printf("BYTES copied are: ");
+          for (int i = 0; i < len; i++) {
+        printf("%d ", buf1[i]);
+        */
+      
+ 
+        
         break;
     } //switch
      
@@ -271,9 +278,9 @@ PROCESS_THREAD(udp_server_process, ev, data)
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
     /*printf("buckle up buckaroo\n");
     printf("String: %s\n", serbuf);
-    printf( "struct1: nodeid: %d, humidity: %d, temperature: %d\n",
-      dht22_data.old.nodeid, dht22_data.old.humidity, dht22_data.old.temperature);
-    printf( "struct2: nodeid: %d, humidity: %d, temperature: %d\n", nodeid1, humidity1, temperature1);
+    printf( "struct1: nodeID: %d, humidity: %d, temperature: %d\n",
+      dht22_data.old.nodeID, dht22_data.old.humidity, dht22_data.old.temperature);
+    printf( "struct2: nodeID: %d, humidity: %d, temperature: %d\n", nodeid1, humidity1, temperature1);
     printf("bye bye\n");
     */
     etimer_reset(&et);
