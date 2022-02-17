@@ -42,13 +42,7 @@
 
 #define OWN_NODEID NODEID_O3_1
 
-
-
-
-
 //static linkaddr_t coordinator_addr =  {{ 0x00, 0x12, 0x4b, 0x00, 0x06, 0x0d, 0xb6, 0xa4 }};
-
-
 
 typedef enum
 {
@@ -143,7 +137,6 @@ float ReadRs(){
     putFloat(rS, DEC3);
     printf("\n"); */ 
     return rS;
-
     }
 void calibrate(){
 
@@ -230,11 +223,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
       printf("\"Temperature\": %02d.%d, ", temperature / 10, temperature % 10);
       printf("\"Humidity\": %02d.%d ", humidity / 10, humidity % 10);
 
-      
-
-      printf("nodeid = %d\n", buf[0]);
-
-     
+      printf("nodeid = %d\n", buf[0]);    
       buf[1] = temperature & 0xFF;
       buf[2] = (temperature >> 8) & 0xFF;
       buf[3] = humidity & 0xFF;
@@ -245,14 +234,15 @@ PROCESS_THREAD(udp_client_process, ev, data)
     printf("Error reading DHT22\n");
     printf("rebooting...\n");
     //watchdog_reboot();
-    adc_zoul.configure(SENSORS_HW_INIT, ZOUL_SENSORS_ADC3); //por si acaso
+    //adc_zoul.configure(SENSORS_HW_INIT, ZOUL_SENSORS_ADC3); //por si acaso
+    watchdog_reboot();
   }     
 
   nullnet_buf = (uint8_t *)&buf;
   nullnet_len = sizeof(buf);
 
 
-   printf("\n nullnet buffer = %d %d %d %d %d %d %d %d %d \n ", nullnet_buf[0], nullnet_buf[1], nullnet_buf[2], nullnet_buf[3], nullnet_buf[4] , nullnet_buf[5], nullnet_buf[6], nullnet_buf[7], nullnet_buf[8]); 
+  printf("\n nullnet buffer = %d %d %d %d %d %d %d %d %d \n ", nullnet_buf[0], nullnet_buf[1], nullnet_buf[2], nullnet_buf[3], nullnet_buf[4] , nullnet_buf[5], nullnet_buf[6], nullnet_buf[7], nullnet_buf[8]); 
   NETSTACK_NETWORK.output(NULL);    //
 
     

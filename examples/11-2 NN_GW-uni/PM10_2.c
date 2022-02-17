@@ -81,7 +81,7 @@
 #define LOG_LEVEL LOG_LEVEL_INFO
 
 
-//static linkaddr_t coordinator_addr =  {{ 0x00, 0x12, 0x4b, 0x00, 0x06, 0x0d, 0xb6, 0xa4 }};
+static linkaddr_t coordinator_addr =  {{ 0x00, 0x12, 0x4b, 0x00, 0x06, 0x0d, 0xb6, 0xa4 }};
 
 
 /*---------------------------------------------------------------------------*/
@@ -141,7 +141,7 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
 
 
     printf("\nnullnet buffer = %d %d %d \n ", nullnet_buf[0], nullnet_buf[1], nullnet_buf[2]);
-    NETSTACK_NETWORK.output(NULL); //send the buffer  
+    NETSTACK_NETWORK.output(&coordinator_addr); //send the buffer  
     
   }
   PROCESS_END();

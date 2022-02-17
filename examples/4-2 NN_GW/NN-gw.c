@@ -120,7 +120,7 @@ void input_callback(const void *data, uint16_t len,
   uint8_t *buf1 = (uint8_t *)malloc(sizeof(uint8_t) + 2*sizeof(float)); //allocate 9bytes (maximum payload)
   memcpy(buf1, data, len);
   
-  
+  uint32_t fbuf; //float buffer
   union {
     float float_variable;
     uint8_t temp_array[4];
@@ -163,12 +163,16 @@ void input_callback(const void *data, uint16_t len,
 
         printf("{\"nodeID\": %d", buf1[0]);
         printf(",\"co\": ");
-        putFloat(sensors.co, DEC2);
+        fbuf = sensors.co * 100;
+        printf("%lu.%02lu", fbuf/100, fbuf%100);
         printf(", \"no2\": ");
-        putFloat(sensors.no2, DEC2);
+        fbuf = sensors.no2 * 100;
+        printf("%lu.%02lu", fbuf/100, fbuf%100);
         printf("}\n");    
         break;
-      
+
+
+
       case NODEID_DHT22_1:
       case NODEID_DHT22_2:
        //printf("dht22: %d\n", buf1[0]);
@@ -193,8 +197,8 @@ void input_callback(const void *data, uint16_t len,
 
         //JSON conversion
         printf("{\"nodeID\": %d", buf1[0]);
-        printf(",\"Humidity\": %02d.%d", sensors.humidity/10, sensors.humidity%10);
-        printf(",\"Temperature\": %02d.%d", sensors.temperature/10, sensors.temperature%10);
+        printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
+        printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
         printf(",\"Noise\": %lu", sensors.noise);
         printf("}\n");
 
@@ -221,14 +225,18 @@ void input_callback(const void *data, uint16_t len,
         
         //sensors.o3 = u.float_variable;
         memcpy(&sensors.o3, &u.float_variable, sizeof(float));
+        fbuf = sensors.o3 * 100;
+        
+
+
         printf("{\"nodeID\": %d", buf1[0]);
         printf(",\"ppm\": ");
-        putFloat(sensors.o3, DEC3);
-        printf(", \"Humidity\": %02d.%d", sensors.humidity/10, sensors.humidity%10);
-        printf(",\"Temperature\": %02d.%d", sensors.temperature/10, sensors.temperature%10);
+        printf("%lu.%02lu", fbuf/100, fbuf%100);
+        //putFloat(sensors.o3, DEC3);
+        printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
+        printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
         printf("}\n");
         break;
-
       case NODEID_PM10_1:
       case NODEID_PM10_2:
         //printf("pm10: %d\n", buf1[0]);
@@ -244,10 +252,7 @@ void input_callback(const void *data, uint16_t len,
         printf("BYTES copied are: ");
           for (int i = 0; i < len; i++) {
         printf("%d ", buf1[i]);
-        */
-      
- 
-        
+        */        
         break;
     } //switch
      

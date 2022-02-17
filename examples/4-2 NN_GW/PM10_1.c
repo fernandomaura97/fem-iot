@@ -104,7 +104,7 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
 
   printf("sizeof(buffer) = %d\n", sizeof(buf2));
 
-  pm10.configure(SENSORS_ACTIVE, ADC_PIN2);
+  
 
   etimer_set(&et, CLOCK_SECOND * 5);
   PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
@@ -118,8 +118,11 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
   /* Let it spin and read sensor data */
 
   while(1) {
+    
     etimer_set(&et, SAMPLE_RATE*CLOCK_SECOND);
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+
+    pm10.configure(SENSORS_ACTIVE, ADC_PIN2);
     pm10_value = pm10.value(1);
 
     if(pm10_value != ADC_WRAPPER_ERROR) {
@@ -132,6 +135,7 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
     } else {
     
     printf("Error, enable the DEBUG flag in adc-wrapper.c for info\n");
+    watchdog_reboot();
     PROCESS_EXIT();
     }
 
@@ -141,7 +145,6 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
 
     printf("\nnullnet buffer = %d %d %d \n ", nullnet_buf[0], nullnet_buf[1], nullnet_buf[2]);
     NETSTACK_NETWORK.output(NULL); //send the buffer  
-    
   }
   PROCESS_END();
 

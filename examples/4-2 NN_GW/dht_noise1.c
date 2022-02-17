@@ -130,9 +130,12 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
     for(i = 0; i<100; i++){
       etimer_set(&et, CLOCK_SECOND/10);
       PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+      //uint16_t noise = adc_sensors.value(ANALOG_GROVE_LOUDNESS);
+      //printf("noise = %u\n", noise * 5/3);
       avg_noise += adc_sensors.value(ANALOG_GROVE_LOUDNESS) * 5/3; //multiply by 5/3 to get "true" value
     }
     printf("avg noise = %lu\n", avg_noise/100);
+    avg_noise = avg_noise/100;
     
     
     union {
@@ -141,7 +144,7 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
       } us;
 
 
-    us.float_variable = avg_noise/100;
+    us.float_variable = avg_noise;
     buf2[5] = us.temp_array[0];
     buf2[6] = us.temp_array[1];
     buf2[7] = us.temp_array[2];
@@ -165,7 +168,8 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
       
     } else {
       printf("Failed to read the sensor\n");
-      adc_sensors.configure(ANALOG_GROVE_LOUDNESS, ADC_PIN1); //Just in case, adc's get stuck otherwise
+      //adc_sensors.configure(ANALOG_GROVE_LOUDNESS, ADC_PIN1); //Just in case, adc's get stuck otherwise
+      watchdog_reboot();
 
     }
     

@@ -244,8 +244,8 @@ PROCESS_THREAD(udp_client_process, ev, data)
   else{
     printf("Error reading DHT22\n");
     printf("rebooting...\n");
-    //watchdog_reboot();
-    adc_zoul.configure(SENSORS_HW_INIT, ZOUL_SENSORS_ADC3); //por si acaso
+    watchdog_reboot();
+    //adc_zoul.configure(SENSORS_HW_INIT, ZOUL_SENSORS_ADC3); //por si acaso
   }     
 
   nullnet_buf = (uint8_t *)&buf;
