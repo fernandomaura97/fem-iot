@@ -6,6 +6,8 @@
 #include "random.h"
 #include "dev/radio.h"
 
+#include "net/packetbuf.h"
+
 /* Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "App"
@@ -14,70 +16,41 @@
 
 /* Configuration */
 #define SEND_INTERVAL (8 * CLOCK_SECOND)
-
+static linkaddr_t coordinator_addr = {{ 0x00, 0x12, 0x4b, 0x00, 0x06, 0x0d, 0xb6, 0xa4 }};
 /*---------------------------------------------------------------------------*/
 PROCESS(nullnet_example_process, "NullNet broadcast example");
-AUTOSTART_PROCESSES(&nullnet_example_process);
+PROCESS(parser_process, "Parsing process");
+AUTOSTART_PROCESSES(&nullnet_example_process, &parser_process);
 
 /*---------------------------------------------------------------------------*/
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {
+  printf("Callback \t received rx: %d\n", *(uint8_t *)data);
+  if(len == sizeof(uint8_t)) {
+    //printf("%d\n", *(uint8_t *)data);
+    //LOG_INFO_LLADDR(src);
+    //LOG_INFO_(" address \n");
+    coordinator_addr = *src;
+    process_poll(&parser_process);
+
+
+  }
   
 }
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(nullnet_example_process, ev, data)
 {
   static struct etimer periodic_timer;
-  static unsigned count = 0;
-  static radio_value_t txpower;
+  //static unsigned count = 0;
+  //static radio_value_t txpower;
 
   PROCESS_BEGIN();
-
-  nullnet_buf = (uint8_t *)&count;
-  nullnet_len = sizeof(count);
-  
-
-  count = 69;
-
- 
-  
+  nullnet_set_input_callback(input_callback);
   while(1) {
-    
-    etimer_set(&periodic_timer, 5 * CLOCK_SECOND);  
-    
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-    nullnet_buf = (uint8_t *)&count;
-    nullnet_len = sizeof(count);
-
-
-    NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &txpower);
-    printf("txpower inicial: %d\n", txpower);
-
-    etimer_set(&periodic_timer, 10 * CLOCK_SECOND);  
-    
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-
-  
-    NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, -5);
-
-    NETSTACK_NETWORK.output(NULL);
-
-
-    NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &txpower);
-    printf("txpower cambio 1: %d\n", txpower);
-
-     etimer_set(&periodic_timer, 10 * CLOCK_SECOND);  
-    
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-
-    NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, 0);
-    NETSTACK_NETWORK.output(NULL);
-
-
-    NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &txpower);
-    printf("txpower 0: %d\n", txpower);
-
+    etimer_set(&periodic_timer, 10*CLOCK_SECOND);
+    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
+   
   }
 
   PROCESS_END();
@@ -86,57 +59,115 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
 PROCESS_THREAD(parser_process, ev, data)
 {
     PROCESS_BEGIN();
+    static struct mydatas {
+        uint8_t NodeID;
+        int16_t temperature;
+        int16_t hum;
+        float co ;
+        float no2 ;
+        float o3 ;
+        uint32_t noise ; 
+        uint16_t pm10;
+
+    } mydata;
+    mydata.co = 1.23;
+    mydata.no2 = 2.34;
+    mydata.o3 = 3.45;
+    mydata.noise = 4560;
+    mydata.pm10 = 45;
+    mydata.hum = 560;
+    mydata.temperature = 670;
+
+
+    static uint8_t megabuf[9];
+
+    nullnet_buf = (uint8_t *)&megabuf;
+    nullnet_len = sizeof(megabuf);
 
     while(1) {
-        PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-        
-        //?????????????????????? ZONE
-        uint8_t* buf, buf2;
-        buf = packetbuf_dataptr();	
-        uint8_t* sensor_reading = (uint8_t*)buf;
-        printf("%d\n", *sensor_reading);
+    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+    printf("\n\n");
+    
+    //?????????????????????? ZONE
+    uint8_t* buf;
+    buf = packetbuf_dataptr();	
+    uint8_t* sensor_reading = (uint8_t*)buf;
 
 
-        packetbuf_copyto(&buf2);
-        uint8_t buffer_size = packetbuf_datalen();
-        uint8_t superbuf[buffer_size];
-        memcpy(superbuf, &buf2, buffer_size);
+    printf("PROCESS: \tReceived %d from  ", *sensor_reading);
+    LOG_INFO_LLADDR(&coordinator_addr);
+    LOG_INFO_(" address \n");
+/*
+    packetbuf_copyto(&buf2);
+    uint8_t buffer_size = packetbuf_datalen();
+    uint8_t superbuf[buffer_size];
+    memcpy(superbuf, &buf2, buffer_size);
 
-        printf("superbuf: %d %d %d %d %d \n", superbuf[0], superbuf[1], superbuf[2], superbuf[3], superbuf[4]);
+    printf("superbuf: %d %d %d %d %d \n\n\n", superbuf[0], superbuf[1], superbuf[2], superbuf[3], superbuf[4]); //extra bytes unneeded
+*/
+
+  ///?????????????????????? ZONE
 
 
-      ///?????????????????????? ZONE
+    switch(buf[0]) {
+        case 1:
+        case 3:
+            printf("Node %d, multigas\n", buf[0]);
 
+            megabuf[0] = buf[0];
+            memcpy(&megabuf[1], &mydata.co, sizeof(mydata.co));
+            memcpy(&megabuf[5], &mydata.no2, sizeof(mydata.no2));
+            printf("Sending %d %d %d %d %d %d %d %d %d\n", megabuf[0], megabuf[1], megabuf[2], megabuf[3], megabuf[4], megabuf[5], megabuf[6], megabuf[7], megabuf[8]);
 
-        switch(buf[0]) {
-            case 0:
-                printf("Node 0\n");
-                break;
-            case 1:
-                printf("Node 1\n");
-                break;
-            case 2:
-                printf("Node 2\n");
-                break;
-            case 3:
-                printf("Node 3\n");
-                break;
-            case 4:
-                printf("Node 4\n");
-                break;
-            case 5:
-                printf("Node 5\n");
-                break;
-            case 6:
-                printf("Node 6\n");
-                break;
-            case 7:
-                printf("Node 7\n");
-                break;
-            default:
-                printf("?");
-                break;
-        }
+            //make sure it's correct data
+            nullnet_buf = (uint8_t *)&megabuf;
+            nullnet_len = sizeof(megabuf);
+            NETSTACK_NETWORK.output(NULL); 
+            
+
+            break;
+        case 2:
+        case 4: 
+            printf("Node %d\n, dht22", buf[0]);
+
+            megabuf[0] = buf[0];
+            memcpy(&megabuf[1], &mydata.temperature, sizeof(mydata.temperature));
+            memcpy(&megabuf[3], &mydata.hum, sizeof(mydata.hum));
+            memcpy(&megabuf[5], &mydata.noise, sizeof(mydata.noise));
+
+            nullnet_buf = (uint8_t *)&megabuf;
+            nullnet_len = sizeof(megabuf);
+            NETSTACK_NETWORK.output(NULL); 
+            break;
+        case 5:
+        case 6:
+          printf("Node %d\n, Ozone", buf[0]);
+
+            megabuf[0] = buf[0];
+            memcpy(&megabuf[1], &mydata.o3, sizeof(mydata.o3));
+            memcpy(&megabuf[5], &mydata.temperature, sizeof(mydata.temperature));
+            memcpy(&megabuf[7], &mydata.hum, sizeof(mydata.hum));
+
+            nullnet_buf = (uint8_t *)&megabuf;
+            nullnet_len = sizeof(megabuf);
+            NETSTACK_NETWORK.output(NULL); 
+            break;
+        case 7:
+        case 8:
+            printf("Node %d, PM10\n", buf[0]);
+
+            megabuf[0] = buf[0];
+            memcpy(&megabuf[1], &mydata.pm10, sizeof(mydata.pm10));
+
+            nullnet_buf = (uint8_t *)&megabuf;
+            nullnet_len = sizeof(megabuf);
+            NETSTACK_NETWORK.output(NULL); 
+                  
+            break;
+        default:
+            printf("?");
+            break;
+    }
 
     }
 
