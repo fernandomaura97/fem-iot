@@ -3,7 +3,8 @@
 #define PROJECT_CONF_H_
 /*------------------------*/
 
-#define LOG_CONF_LEVEL_RPL                         LOG_LEVEL_DBG
+
+#define LOG_CONG_LEVEL_NULLNET LOG_LEVEL_DEBUG
 
 #define ZOUL_CONF_USE_CC1200_RADIO          1
 #define IEEE802154_CONF_DEFAULT_CHANNEL     2

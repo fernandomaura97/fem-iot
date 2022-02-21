@@ -26,7 +26,7 @@ AUTOSTART_PROCESSES(&nullnet_example_process, &parser_process);
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {
-  printf("Callback \t received rx: %d\n", *(uint8_t *)data);
+  printf("Callback received rx: %d\n", *(uint8_t *)data);
   if(len == sizeof(uint8_t)) {
     //printf("%d\n", *(uint8_t *)data);
     //LOG_INFO_LLADDR(src);
@@ -122,7 +122,7 @@ PROCESS_THREAD(parser_process, ev, data)
             //make sure it's correct data
             nullnet_buf = (uint8_t *)&megabuf;
             nullnet_len = sizeof(megabuf);
-            NETSTACK_NETWORK.output(NULL); 
+            NETSTACK_NETWORK.output(&coordinator_addr); 
             
 
             break;
@@ -137,21 +137,31 @@ PROCESS_THREAD(parser_process, ev, data)
 
             nullnet_buf = (uint8_t *)&megabuf;
             nullnet_len = sizeof(megabuf);
-            NETSTACK_NETWORK.output(NULL); 
+            NETSTACK_NETWORK.output(&coordinator_addr); 
             break;
         case 5:
         case 6:
-          printf("Node %d\n, Ozone", buf[0]);
+          printf("Node %d\n, Ozone\n", buf[0]);
+          union {
+            float float_variable;
+            uint8_t temp_array[4];
+          } u;
 
-            megabuf[0] = buf[0];
-            memcpy(&megabuf[1], &mydata.o3, sizeof(mydata.o3));
-            memcpy(&megabuf[5], &mydata.temperature, sizeof(mydata.temperature));
-            memcpy(&megabuf[7], &mydata.hum, sizeof(mydata.hum));
+          u.float_variable = mydata.o3;
 
-            nullnet_buf = (uint8_t *)&megabuf;
-            nullnet_len = sizeof(megabuf);
-            NETSTACK_NETWORK.output(NULL); 
-            break;
+          megabuf[5] = u.temp_array[0];
+          megabuf[6] = u.temp_array[1];
+          megabuf[7] = u.temp_array[2];
+          megabuf[8] = u.temp_array[3];
+          megabuf[0] = buf[0];
+
+          memcpy(&megabuf[1], &mydata.temperature, sizeof(mydata.temperature));
+          memcpy(&megabuf[3], &mydata.hum, sizeof(mydata.hum));
+
+          nullnet_buf = (uint8_t *)&megabuf;
+          nullnet_len = sizeof(megabuf);
+          NETSTACK_NETWORK.output(&coordinator_addr); 
+          break;
         case 7:
         case 8:
             printf("Node %d, PM10\n", buf[0]);
@@ -161,7 +171,7 @@ PROCESS_THREAD(parser_process, ev, data)
 
             nullnet_buf = (uint8_t *)&megabuf;
             nullnet_len = sizeof(megabuf);
-            NETSTACK_NETWORK.output(NULL); 
+            NETSTACK_NETWORK.output(&coordinator_addr); 
                   
             break;
         default:

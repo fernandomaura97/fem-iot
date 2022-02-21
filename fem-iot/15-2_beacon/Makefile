@@ -2,7 +2,7 @@ CONTIKI_PROJECT = coord.c sta.c
 
 all: $(CONTIKI_PROJECT)
 
-MODULES += os/services/shell
+#MODULES += os/services/shell
 
 
 

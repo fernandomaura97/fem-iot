@@ -36,7 +36,12 @@ typedef struct sensor_data_t {
   float no2;
 } sensor_data_t;
 static sensor_data_t sensors;
-
+/*
+#define SEND_INTERVAL (10 * CLOCK_SECOND)
+#define BEACON_INTERVAL (20* CLOCK_SECOND)
+#define T_MM (5* CLOCK_SECOND)
+#define T_GUARD (1* CLOCK_SECOND)
+#define T_SLOT (10* CLOCK_SECOND)*/
 
 
 /* Configuration */
@@ -45,12 +50,14 @@ static sensor_data_t sensors;
 #define T_MM (30* CLOCK_SECOND)
 #define T_GUARD (1* CLOCK_SECOND)
 #define T_SLOT (10* CLOCK_SECOND)
+
 //struct sensor types
 
 
 
 /*---------------------------------------------------------------------------*/
 PROCESS(nullnet_example_process, "NullNet broadcast example");
+//PROCESS(beacon_process, "beacon process");
 //PROCESS(parser_process, "Parsing process");
 
 AUTOSTART_PROCESSES(&nullnet_example_process);
@@ -59,8 +66,7 @@ AUTOSTART_PROCESSES(&nullnet_example_process);
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {
-  printf("HOLAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-  
+  printf("Callback \t received rx: %d\n", *(uint8_t *)data); 
   uint8_t *buf1 = (uint8_t *)malloc(sizeof(uint8_t) + 2*sizeof(float)); //allocate 9bytes (maximum payload)
   memcpy(buf1, data, len);
   
@@ -209,11 +215,14 @@ void input_callback(const void *data, uint16_t len,
 */
   free(buf1);
  } //callback
-
+static uint8_t sensor_type_byte;
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(nullnet_example_process, ev, data)
 {
   static struct etimer periodic_timer;
+  static struct etimer send_timer;
+  static struct etimer send_timer2;
+  //static struct etimer send_timer3;
   //static unsigned count = 0;
   //static uint16_t sensor_nodes; 
   
@@ -224,13 +233,13 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
   
   PROCESS_BEGIN();
 
-  random_init(299);
+  //random_init(0);
  
   sensor_type.value = random_rand(); //Create random sensor type
-  //printf ("%d\n", sensor_type.value);
+ 
   printf("R0: %d\t, R1: %d\n", sensor_type.bytes[0], sensor_type.bytes[1]);
  
-  static uint8_t sensor_type_byte;  //Get random uint8_t
+    //Get random uint8_t
   memcpy(&sensor_type_byte, &sensor_type.bytes[0], sizeof(sensor_type.bytes[0]));
   printf("Bit mask: %d\n", sensor_type_byte);
 
@@ -250,17 +259,25 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
     //Send 3 beacons
     static uint8_t i;
     for (i=0; i<3; i++) { 
-      etimer_set(&periodic_timer, T_GUARD); //Time between beacons
-      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+      etimer_set(&send_timer, T_GUARD); //Time between beacons
+      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&send_timer));
+
+      LOG_INFO("Beacon %d sent, data %d\n", (i+1), sensor_type_byte);
+      nullnet_buf = (uint8_t *)&sensor_type_byte;
+      nullnet_len = sizeof(sensor_type_byte);
       NETSTACK_NETWORK.output(NULL); 
-      printf("Beacon %d sent, data %d\n", (i+1), sensor_type_byte);
+      
     }
     
+    /*--------------------------------------------------------------*/
+   // process_poll(&beacon_process);
+
+
     printf("waiting for measurements\n");
 
 
-    etimer_set (&periodic_timer, T_MM); //Set timer for measurement interval
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+    etimer_set (&send_timer2, T_MM); //Set timer for measurement interval
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&send_timer2));
 
     //Now, poll every node in sensor_type_byte bitmask in order to receive a measurement
 
@@ -269,18 +286,20 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
     static clock_time_t dt;
     t = clock_time();
     printf("seconds since boot: %lu\n", t/CLOCK_SECOND);
-    for (i=0; i<8; i++) {
+    static uint8_t i2;
+    for (i2=0; i2<8; i2++) {
       if (sensor_type_byte & 0x01) {
 
         sensor_type_byte = sensor_type_byte >> 1;
         //printf("Polling node %d\n", i);
 
 
-        nullnet_buf = (uint8_t *)&i;
-        nullnet_len = sizeof(i);
+        nullnet_buf = (uint8_t *)&i2;
+        nullnet_len = sizeof(i2);
         dt = clock_time()-t;
-        printf("Polling node %d, dt: %lu\n", i, dt/CLOCK_SECOND);
+        printf("Polling node %d, dt: %lu\n", i2, dt/CLOCK_SECOND);
         NETSTACK_NETWORK.output(NULL);
+       
        
 
 
@@ -293,7 +312,7 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
       else{
         sensor_type_byte = sensor_type_byte >> 1;
         dt = clock_time()-t;
-        printf("Not Polling node %d, dt: %lu\n", i, dt/CLOCK_SECOND);
+        printf("Not Polling node %d, dt: %lu\n", i2, dt/CLOCK_SECOND);
 
 
         etimer_set(&periodic_timer, T_SLOT); 
@@ -332,6 +351,38 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
 
   PROCESS_END();
 }
+/*
+PROCESS_THREAD(beacon_process, ev, data)
+{   
+  
+  static struct etimer send_timer;
+    
+    PROCESS_BEGIN();  
+    while(1){
+       PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
 
+       static uint8_t i;
+       for (i=0; i<3; i++) { 
+        etimer_set(&send_timer, T_GUARD); //Time between beacons
+        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&send_timer));
+
+        LOG_INFO("Beacon %d sent, data %d\n", (i+1), sensor_type_byte);
+        nullnet_buf = (uint8_t *)&sensor_type_byte;
+        nullnet_len = sizeof(sensor_type_byte);
+        NETSTACK_NETWORK.output(NULL); 
+        PROCESS_EXIT();
+        }
+             
+      
+    }
+   
+
+   
+
+    PROCESS_END();
+
+
+}
+*/
 
 
