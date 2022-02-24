@@ -34,7 +34,7 @@
 /*---------------------------------------------------------------------------*/
 
 
-//#define LOG_CONF_LEVEL_NULLNET LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_NULLNET LOG_LEVEL_DBG
 //#define LOG_CONF_LEVEL_FRAMER LOG_LEVEL_INFO
 
 #define ZOUL_CONF_USE_CC1200_RADIO          1

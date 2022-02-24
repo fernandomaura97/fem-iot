@@ -1,4 +1,4 @@
-CONTIKI_PROJECT = coord.c sta.c
+CONTIKI_PROJECT = coord.c sta sta1 sta2 sta4
 
 all: $(CONTIKI_PROJECT)
 

@@ -52,10 +52,10 @@ static sensor_data_t sensors;
 #define SPEED_NW 1 //Speed >1 if we want faster beacons and times ( for debugging "quicker" without changing too much code)
 
 #define SEND_INTERVAL (220 * CLOCK_SECOND * (1/SPEED_NW))
-#define BEACON_INTERVAL (240* CLOCK_SECOND * (1/SPEED_NW))
-#define T_MM (30* CLOCK_SECOND  * 1/SPEED_NW)
-#define T_GUARD (1* CLOCK_SECOND * 1/SPEED_NW)
-#define T_SLOT (10* CLOCK_SECOND *  1/SPEED_NW)
+#define BEACON_INTERVAL (360* CLOCK_SECOND * (1/SPEED_NW))
+#define T_MM (10* CLOCK_SECOND  * 1/SPEED_NW)
+#define T_GUARD (0.5 * CLOCK_SECOND * 1/SPEED_NW)
+#define T_SLOT (1.5 * CLOCK_SECOND *  1/SPEED_NW)
 
 //struct sensor types
 
@@ -221,16 +221,21 @@ void input_callback(const void *data, uint16_t len,
 */
   free(buf1);
  } //callback
-static uint8_t sensor_type_byte;
+
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(nullnet_example_process, ev, data)
 {
   static struct etimer periodic_timer;
-  static struct etimer send_timer;
   static struct etimer send_timer2;
+  static struct etimer beacon_timer;
+
+
+  static uint8_t sensor_type_byte;
+  static uint8_t beaconbuf[3];
   //static struct etimer send_timer3;
   //static unsigned count = 0;
   //static uint16_t sensor_nodes; 
+  
   
   union {
     uint8_t bytes[2];
@@ -245,46 +250,65 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
   
 
   //create random beacon type choosing between 4 possible options
-  uint8_t beacon_type = random_rand() % 4;
+  
+  //uint8_t beacon_type = random_rand() % 4;
+  uint8_t beacon_type = 0;
   printf("beacon type: %d\n", beacon_type);
 
   uint8_t cycle_time = random_rand() % 10;
-  printf("cycle time: %d\n", cycle_time);
+  printf("cycle time: %d\n", cycle_time); //idgaf about this (yet)
 
   uint8_t frame = beacon_type << 6 | cycle_time;
   printf("frame: %d\n", frame);
  
-  printf("R0: %d\t, R1: %d\n", sensor_type.bytes[0], sensor_type.bytes[1]);
  
-    //Get random uint8_t
+  //Get random uint8_t
   memcpy(&sensor_type_byte, &sensor_type.bytes[0], sizeof(sensor_type.bytes[0]));
   printf("Bit mask: %d\n", sensor_type_byte);
+  beaconbuf[0] = frame;
+  beaconbuf[1] = sensor_type_byte;
+  beaconbuf[2] = 0;
+  
 
-  nullnet_buf = (uint8_t *)&sensor_type_byte;
-  nullnet_len = sizeof(sensor_type_byte);
+  nullnet_buf = (uint8_t *)&beaconbuf;
+  nullnet_len = sizeof(beaconbuf);
   nullnet_set_input_callback(input_callback); //Comment if we don't need a rcv callback
 
 
 
   
   while(1) {
-
-    etimer_set(&periodic_timer, BEACON_INTERVAL);  //Set timer for beacon interval
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+    printf("BUIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBIBI\n");
+    etimer_set(&beacon_timer, BEACON_INTERVAL);  //Set timer for beacon interval
+    
+    //Maybe schedule beacons through rtimer? 
 
     /*--------------------------------------------------------------*/
-    //Send 3 beacons
-    static uint8_t i;
-    for (i=0; i<3; i++) { 
+    //Send 3 beacons: It's problematic at the moment, since we have to take into account factors like the node not listening to all beacons, etc.
+    /*--------------------------------------------------------------*/
+    //static uint8_t i;
+    /*for (i=0; i<3; i++) { 
       etimer_set(&send_timer, T_GUARD); //Time between beacons
       PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&send_timer));
+      beaconbuf[2] = i+1;
+      LOG_INFO("Beacon %d sent, data %d, B_num %d", (i+1), sensor_type_byte, beaconbuf[2]);
+      
 
-      LOG_INFO("Beacon %d sent, data %d\n", (i+1), sensor_type_byte);
-      nullnet_buf = (uint8_t *)&sensor_type_byte;
-      nullnet_len = sizeof(sensor_type_byte);
+      nullnet_buf = (uint8_t *)&beaconbuf;
+      nullnet_len = sizeof(beaconbuf);
       NETSTACK_NETWORK.output(NULL); 
       
-    }
+    }*/
+    /*--------------------------------------------------------------*/
+    beaconbuf[1] = sensor_type_byte;
+    LOG_INFO("Beacon %d sent, data %d\n", beaconbuf[2], beaconbuf[1]);
+
+    nullnet_buf = (uint8_t *)&beaconbuf;
+    nullnet_len = sizeof(beaconbuf);
+    NETSTACK_NETWORK.output(NULL);
+    printf("BOBOBOBOBOBOBOOBBOBOBOBOBOBOBOBOBOBOBOBOBOBOBOBOBIBOBOBOBOBOBOBOBOBOBOBOBOBOBOB\n");
+
+
     
     /*--------------------------------------------------------------*/
    // process_poll(&beacon_process);
@@ -301,18 +325,28 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
 
     static clock_time_t t;
     static clock_time_t dt;
+    static uint8_t pollbuf[2];
+
+
+    
     t = clock_time();
     printf("seconds since boot: %lu\n", t/CLOCK_SECOND);
     static uint8_t i2;
+    
     for (i2=1; i2<9; i2++) {
       if (sensor_type_byte & 0x01) {
 
         sensor_type_byte = sensor_type_byte >> 1;
+        pollbuf[0] = 0b01000000;
+        //printf("pollbuf[0]: %d\n", pollbuf[0]);
+        pollbuf[1] = i2;
+
         //printf("Polling node %d\n", i);
 
 
-        nullnet_buf = (uint8_t *)&i2;
-        nullnet_len = sizeof(i2);
+        nullnet_buf = (uint8_t *)&pollbuf;
+        nullnet_len = sizeof(pollbuf);    
+
         dt = clock_time()-t;
         printf("Polling node %d, dt: %lu\n", i2, dt/CLOCK_SECOND);
         NETSTACK_NETWORK.output(NULL);
@@ -347,6 +381,10 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
      //Get random uint8_t
     memcpy(&sensor_type_byte, &sensor_type.bytes[0], sizeof(sensor_type.bytes[0]));
     printf("new Bit mask: %d\n", sensor_type_byte);
+    printf("waiting for time to next beacon\n");
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&beacon_timer));
+    printf("done waiting for time to next beacon\n");
+
 
     //Choose between 3 random values for count
     /*

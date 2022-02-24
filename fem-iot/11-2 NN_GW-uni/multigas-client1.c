@@ -29,7 +29,7 @@
 #define NODEID_O3_1 5
 #define NODEID_O3_2 6
 
-#define OWN_NODEID 1
+#define OWN_NODEID 9 //debug
 
 static linkaddr_t coordinator_addr =  {{ 0x00, 0x12, 0x4b, 0x00, 0x06, 0x0d, 0xb6, 0xa4 }};
 
@@ -151,7 +151,7 @@ while(1) {
   */
     
   //Sample Multichannel gas sensor
-    i2c_master_enable();
+    i2c_master_enable(); //is this useful?
          
     c__ = measure_CO();
 
@@ -198,11 +198,6 @@ while(1) {
     
     printf("\nnullnet buffer = %d %d %d %d %d %d %d %d %d \n ", nullnet_buf[0], nullnet_buf[1], nullnet_buf[2], nullnet_buf[3], nullnet_buf[4] , nullnet_buf[5], nullnet_buf[6], nullnet_buf[7], nullnet_buf[8]);  
         
-
-
-       
-    
-      
       
   }    
   PROCESS_END();
