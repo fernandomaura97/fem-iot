@@ -45,7 +45,7 @@ typedef enum
     DEC6 = 1000000,
 
 } tPrecision ;
-#define SENSOR_READ_INTERVAL (120*CLOCK_SECOND)
+#define SENSOR_READ_INTERVAL (10*CLOCK_SECOND)
 #define ADC_PIN              2
 //conve
 //static dest_ipaddr_t dest_ipaddr = {{0xfe, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0xb6, 0xa8}};
@@ -98,7 +98,11 @@ float ReadRs(){
     /*printf("Valor de VRL:");
     putFloat(vRL, DEC3);
     printf("\n");
-*/
+*/  
+    if(vRL<1.0){
+      printf("error: vRL<1.0\n");
+      return -1;
+    }
     float rS = (5.0 / vRL - 1.0) * 1000000.0;  // 1MOhm == R0 hardcoded value, fix with calibration
 
     /*printf("Valor de RS - hardc:");
@@ -188,6 +192,10 @@ PROCESS_THREAD(udp_client_process, ev, data)
   PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timy));
      
   float rs = ReadRs();
+  if(rs == -1){
+    printf("error: Vrl<1.0\n");
+    continue;
+  }
    
   float ppm = getppm(rs);
   char ppm_[20]; 

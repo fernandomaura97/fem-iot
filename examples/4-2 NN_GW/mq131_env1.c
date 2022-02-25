@@ -26,7 +26,7 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
 
-#define SAMPLE_RATE (150* CLOCK_SECOND)
+#define SAMPLE_RATE ( CLOCK_SECOND)
 #define ADC_PIN              2
 
 
@@ -131,7 +131,7 @@ float ReadRs(){
     putFloat(vRL, DEC3);
     printf("\n");
 
-    float rS = (5.0 / vRL - 1.0) * 1000000.0;  // 1MOhm ==  Value R_l 
+    float rS = (5.1 / vRL - 1.0) * 1000000.0;  // 1MOhm ==  Value R_l 
 
     /*printf("Valor de RS - hardc:");
     putFloat(rS, DEC3);
@@ -154,15 +154,15 @@ float getppm(float rs, float env_ratio){
   float valueR0 = calib_s.R0;
   float ratio = rs / valueR0 * env_ratio; //Where 0.9906 is ratio, to be calculated through getEnvCorrectRatio()
   float ppb = 9.4783 * pow(ratio, 2.3348);
-  float ppm2 = ppb / 1000.0;
-
+  //float ppm2 = ppb / 1000.0;
+/*
   printf("putfloat ppb \n");
   putFloat( ppb, DEC3 );
 
   printf("putfloat ppm \n");
   putFloat( ppm2, DEC3 );
-
-  return ppm2;  
+*/
+  return ppb;  
 }
 
 /*---------------------------------------------------------------------------*/

@@ -47,7 +47,7 @@
 #include <stdio.h>
 #include "contiki.h"
 #include "dev/dht22.h"
-#include "net/netstack.h"
+#include <stdlib.h>
 
 #include "net/netstack.h"
 #include "net/nullnet/nullnet.h"
@@ -58,15 +58,27 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
 
-struct dht22_data_t {
-  uint16_t humidity;
-  uint16_t temperature;
-};
 
-static struct dht22_data_t dht22_data;
-static char msms[33]; //32?
+typedef union {
+  struct s{
+    uint8_t nodeid;
+    uint16_t humidity;
+    uint16_t temperature;
+    /*uint16_t pm10;
+    uint16_t noise;
+    float o3;
+    float co;
+    float no2;*/
+    }old;
+  uint8_t data[sizeof(struct s)];
+} my_data;
 
-static linkaddr_t coordinator_addr =  {{ 0x00, 0x12, 0x4b, 0x00, 0x06, 0x0d, 0xb6, 0xa8 }};
+
+
+//static struct dht22_data_t dht22_data;
+//static char msms[70]; //32?
+
+//static linkaddr_t coordinator_addr =  {{ 0x00, 0x12, 0x4b, 0x00, 0x06, 0x0d, 0xb6, 0xa4 }};
 
 
 /*---------------------------------------------------------------------------*/
@@ -79,12 +91,20 @@ static struct etimer et;
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(remote_dht22_process, ev, data)
 { 
-  
+  static my_data dht22_data; 
   int16_t temperature, humidity;
   
   PROCESS_BEGIN();
   
-  etimer_set(&et, CLOCK_SECOND * 20);
+  if( sizeof(my_data) != (sizeof(uint8_t) + 2*sizeof(uint16_t))){printf("unwanted padding");} //""""assert"""""
+
+  nullnet_buf = (uint8_t *)&dht22_data; //initialize the pointer to the buffer
+  nullnet_len = sizeof(my_data);
+
+  printf("sizeof(my_data) = %d\n", sizeof(my_data));
+  printf("suma: = %d\n", (sizeof(char)+2*sizeof(uint16_t)));
+
+  etimer_set(&et, CLOCK_SECOND * 5);
   PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
   SENSORS_ACTIVATE(dht22);
@@ -92,7 +112,7 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
   /* Let it spin and read sensor data */
 
   while(1) {
-    etimer_set(&et, 120*CLOCK_SECOND);
+    etimer_set(&et, 5*CLOCK_SECOND);
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
     /* The standard sensor API may be used to read sensors individually, using
@@ -100,21 +120,64 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
      * however a single read operation (5ms) returns both values, so by using
      * the function below we save one extra operation
      */
+
+    nullnet_buf = 0;
+    nullnet_len = 0; 
     if(dht22_read_all(&temperature, &humidity) != DHT22_ERROR) {
-      //printf("\"Temperature\": %02d.%02d, ", temperature / 10, temperature % 10);
-      //printf("\"Humidity\": %02d.%02d ", humidity / 10, humidity % 10);
-      dht22_data.temperature = temperature;
-      dht22_data.humidity = humidity;
+      printf("\"Temperature\": %02d.%d, ", temperature / 10, temperature % 10);
+      printf("\"Humidity\": %02d.%d ", humidity / 10, humidity % 10);
+
+      
+      dht22_data.old.temperature = temperature;
+      dht22_data.old.humidity = humidity;
+
+     
+      dht22_data.old.nodeid = 5;
+
+      /*dht22_data.old.nodeid = 0;
+      printf("\nid:0 \t");
+      log_bytes(dht22_data.data, sizeof(dht22_data.data));
+      
+      dht22_data.old.nodeid = 255;
+       printf("\nid:1 \t");
+      log_bytes(dht22_data.data, sizeof(dht22_data.data));*/
+     
+      
+      printf("dht22_data.temperature: %d\n", dht22_data.old.temperature);
+      printf("dht22_data.humidity: %d\n", dht22_data.old.humidity);
+
+      
     } else {
       printf("Failed to read the sensor\n");
     }
     //if want to send struct, memcpy dht22_data to nullnet_buf
+      printf("sending\n");
+      int i;
 
-      snprintf(msms,sizeof(msms), "{\"nodeID\": \"2\",  %u.%u , %u.%u}", dht22_data.temperature/10, dht22_data.temperature%10, dht22_data.humidity/10, dht22_data.humidity%10);  //prepare JSON string
-      memcpy(nullnet_buf, &msms, sizeof(msms));
-      nullnet_len = sizeof(msms);
+      uint8_t *buf1 = (uint8_t *)malloc(sizeof(my_data));
+      memcpy(buf1, &dht22_data, sizeof(my_data));
+      printf("copied is: ");
+      for (i = 0; i < sizeof(my_data); i++) {
+        printf("%d ", buf1[i]);
+      }
+      printf("\n");
+
+      //snprintf(msms,sizeof(msms), "{\"nodeID\": \"2\",  %u.%u , %u.%u}", dht22_data.temperature/10, dht22_data.temperature%10, dht22_data.humidity/10, dht22_data.humidity%10);  //prepare JSON string
+      memcpy(nullnet_buf, &buf1, sizeof(my_data));
+      nullnet_len = sizeof(my_data);
+      printf("actual buffer is: ");
+      for (i = 0; i < nullnet_len; i++) {
+        printf("%d ", nullnet_buf[i]);
+      }
+      printf("\n");
+      free(buf1);
+
+      //printf("bytes as hex: \t");
+      //log_bytes(nullnet_buf, nullnet_len);
+      //printf("\n");
+
       
-      NETSTACK_NETWORK.output(&coordinator_addr);
+      NETSTACK_NETWORK.output(NULL);
     
   }
   PROCESS_END();

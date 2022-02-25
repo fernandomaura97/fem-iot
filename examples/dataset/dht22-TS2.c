@@ -90,8 +90,9 @@ udp_rx_callback(struct simple_udp_connection *c,
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(remote_dht22_process, ev, data)
 { 
+  
   int16_t temperature, humidity;
-  char temp[29];
+  char temp[28];
   char hums[25];
   char msms[90];
   uip_ipaddr_t dest_ipaddr;
@@ -99,10 +100,9 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
   PROCESS_BEGIN();
   simple_udp_register(&udp_conn, UDP_CLIENT_PORT, NULL,
                       UDP_SERVER_PORT, udp_rx_callback);
-  
+
   etimer_set(&et, CLOCK_SECOND * 20);
   PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-
 
   SENSORS_ACTIVATE(dht22);
 
@@ -120,8 +120,8 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
     if(dht22_read_all(&temperature, &humidity) != DHT22_ERROR) {
       //printf("\"Temperature\": %02d.%02d, ", temperature / 10, temperature % 10);
       //printf("\"Humidity\": %02d.%02d ", humidity / 10, humidity % 10);
-      snprintf(temp, sizeof(temp), "\"Temperature2\": %02d.%d ", temperature / 10, temperature % 		10);
-      snprintf(hums, sizeof(hums), "\"Humidity2\": %02d.%d ", humidity / 10, humidity % 10);
+      snprintf(temp, sizeof(temp), "\"Temperature\": %02d.%d", temperature / 10, temperature % 10);
+      snprintf(hums, sizeof(hums), "\"Humidity\": %02d.%d ", humidity / 10, humidity % 10);
     } else {
       printf("Failed to read the sensor\n");
     }
@@ -132,10 +132,10 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
 
     if(is_reachable && root_found) {
     
-    	    snprintf(msms,sizeof(msms), "{\"nodeID\": \"4\" , %s , %s}", temp, hums);  //prepare JSON string
-	    simple_udp_sendto(&udp_conn, msms, sizeof(msms), &dest_ipaddr); 
-    }    else {
-  	    LOG_INFO("Not reachable yet\n");
+    	    snprintf(msms,sizeof(msms), "{\"nodeID\": \"2\",  %s , %s}", temp, hums);  //prepare JSON string
+	        simple_udp_sendto(&udp_conn, msms, sizeof(msms), &dest_ipaddr); 
+    }     else {
+  	       LOG_INFO("Not reachable yet\n");
     }
 }
   PROCESS_END();

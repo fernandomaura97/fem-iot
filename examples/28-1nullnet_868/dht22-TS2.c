@@ -64,7 +64,7 @@ struct dht22_data_t {
 static struct dht22_data_t dht22_data;
 static char msms[33]; //32?
 
-static linkaddr_t coordinator_addr =  {{ 0x00, 0x12, 0x4b, 0x00, 0x06, 0x0d, 0xb6, 0xa8 }};
+static linkaddr_t coordinator_addr =  {{ 0x00, 0x12, 0x4b, 0x00, 0x06, 0x0d, 0xb6, 0xa4 }};
 /*---------------------------------------------------------------------------*/
 PROCESS(remote_dht22_process, "DHT22 test");
 AUTOSTART_PROCESSES(&remote_dht22_process);
@@ -88,7 +88,7 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
   /* Let it spin and read sensor data */
 
   while(1) {
-    etimer_set(&et, 120*CLOCK_SECOND);
+    etimer_set(&et, 60*CLOCK_SECOND);
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
     /* The standard sensor API may be used to read sensors individually, using
@@ -105,7 +105,7 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
       printf("Failed to read the sensor\n");
     }
     //if want to send struct, memcpy dht22_data to nullnet_buf
-
+      printf("send\n");
       snprintf(msms,sizeof(msms), "{\"nodeID\": \"4\",  %u.%u , %u.%u}", dht22_data.temperature/10, dht22_data.temperature%10, dht22_data.humidity/10, dht22_data.humidity%10);  //prepare JSON string
       memcpy(nullnet_buf, &msms, sizeof(msms));
       nullnet_len = sizeof(msms);

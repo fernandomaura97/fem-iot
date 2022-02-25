@@ -133,6 +133,7 @@ PROCESS_THREAD(remote_dht22_process, ev, data)
     } else {
     
     printf("Error, enable the DEBUG flag in adc-wrapper.c for info\n");
+    watchdog_reboot();
     PROCESS_EXIT();
     }
 

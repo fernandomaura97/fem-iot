@@ -301,6 +301,7 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
       
     }*/
     /*--------------------------------------------------------------*/
+    sensor_type_byte = 0b11111111;
     beaconbuf[1] = sensor_type_byte;
     LOG_INFO("Beacon %d sent, data %d\n", beaconbuf[2], beaconbuf[1]);
 

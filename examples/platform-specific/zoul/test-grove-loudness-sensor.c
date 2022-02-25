@@ -50,7 +50,7 @@
 #include "dev/adc-sensors.h"
 /*---------------------------------------------------------------------------*/
 #define ADC_PIN              5
-#define SENSOR_READ_INTERVAL (CLOCK_SECOND / 8)
+#define SENSOR_READ_INTERVAL (CLOCK_SECOND / 50)
 /*---------------------------------------------------------------------------*/
 PROCESS(remote_grove_loudness_process, "Grove loudness test process");
 AUTOSTART_PROCESSES(&remote_grove_loudness_process);
@@ -73,6 +73,8 @@ PROCESS_THREAD(remote_grove_loudness_process, ev, data)
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
     loudness = adc_sensors.value(ANALOG_GROVE_LOUDNESS);
+  
+
 
     if(loudness != ADC_WRAPPER_ERROR) {
       printf("%u\n", loudness);

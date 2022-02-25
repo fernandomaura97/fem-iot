@@ -252,6 +252,36 @@ void MQ_setEnv(int8_t tempCels, uint8_t humPc) {
    * conditions
    */
 
+/*float MQ_getEnvCorrectRatio(int16_t t, int16_t hum) {
+ 	// Select the right equation based on humidity
+ 	// If default value, ignore correction ratio
+
+	uint8_t temperature = t/10; 
+	uint8_t humidity = hum/10;
+
+ 	if(humidity == 60 && temperature == 20) {
+ 		return 1.0;
+ 	}
+ 	// For humidity > 75%, use the 85% curve
+ 	else if( humidity > 75) {
+    // R^2 = 0.996
+   	return -0.0103 * temperature + 1.1507;
+ 	}
+ 	// For humidity > 50%, use the 60% curve
+ 	else if (humidity> 50) {
+ 		// R^2 = 0.9976
+ 		return -0.0119 * temperature + 1.3261;
+ 	}
+
+ 	// Humidity < 50%, use the 30% curve
+  // R^2 = 0.9986
+ 	else{
+		 return -0.0141 * temperatureCelsuis + 1.5623;
+	 }	
+ }
+
+*/
+
 float MQ_getEnvCorrectRatio() {
  	// Select the right equation based on humidity
  	// If default value, ignore correction ratio
@@ -273,6 +303,9 @@ float MQ_getEnvCorrectRatio() {
   // R^2 = 0.9986
  	return -0.0141 * temperatureCelsuis + 1.5623;
  }
+
+
+
 
  /**
  * Get gas concentration for O3 in ppm

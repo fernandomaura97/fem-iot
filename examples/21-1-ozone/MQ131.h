@@ -132,7 +132,7 @@ int humidityPercent;
 
 		// Read the concentration of gas
 		// The environment should be set for accurate results
-		float MQ_getO3(MQ131Unit unit, float rs);
+		float MQ_getO3(MQ131Unit unit);
 
 		// Define environment
 		// Define the temperature (in Celsius) and humidity (in %) to adjust the

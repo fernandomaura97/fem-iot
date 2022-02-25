@@ -36,7 +36,9 @@ AUTOSTART_PROCESSES(&nullnet_example_process);
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {
-  if(len == sizeof(uint32_t)) {
+ LOG_INFO("received %u bytes\n", len);
+
+  if(len == 4) {
     uint16_t temp;
     uint16_t hum;
     memcpy(&temp, data, 2);

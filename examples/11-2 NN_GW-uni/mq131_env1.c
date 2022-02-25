@@ -40,7 +40,7 @@
 #define NODEID_PM10_1 7
 #define NODEID_PM10_2 8
 
-#define OWN_NODEID NODEID_O3_1
+#define OWN_NODEID 6
 
 static linkaddr_t coordinator_addr =  {{ 0x00, 0x12, 0x4b, 0x00, 0x06, 0x0d, 0xb6, 0xa4 }};
 
@@ -131,7 +131,7 @@ float ReadRs(){
     putFloat(vRL, DEC3);
     printf("\n");
 
-    float rS = (5.0 / vRL - 1.0) * 1000000.0;  // 1MOhm ==  Value R_l 
+    float rS = (5.1 / vRL - 1.0) * 10000.0;  // 1MOhm ==  Value R_l 
 
     /*printf("Valor de RS - hardc:");
     putFloat(rS, DEC3);
@@ -206,7 +206,6 @@ PROCESS_THREAD(udp_client_process, ev, data)
    
   float ppm = getppm(rs, enviratio);
  
-
   union {
         float float_variable;
         uint8_t temp_array[4];
