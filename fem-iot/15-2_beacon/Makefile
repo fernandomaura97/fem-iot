@@ -1,4 +1,4 @@
-CONTIKI_PROJECT = coord.c sta sta1 sta2 sta4
+CONTIKI_PROJECT = coord.c beaconer sta sta1 sta2 sta3 sta4 sta5 sta6 sta7 
 
 all: $(CONTIKI_PROJECT)
 

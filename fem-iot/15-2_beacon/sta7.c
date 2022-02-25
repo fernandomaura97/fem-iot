@@ -18,7 +18,7 @@
 #define f_DATA 0x02
 #define f_ENERGEST 0x03
 
-#define NODEID  1
+#define NODEID  7
 
 #define T_MDB  (10 * CLOCK_SECOND)
 #define T_SLOT  (1.5 * CLOCK_SECOND)
@@ -176,10 +176,10 @@ PROCESS_THREAD(parser_process, ev, data)
 
 
     PROCESS_BEGIN();
-    printf("my node id %d\n", NODEID);
+    
     
     nullnet_set_input_callback(input_callback);
-
+    printf("my node id %d\n", NODEID);
     while(1) {
 
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
@@ -250,7 +250,6 @@ PROCESS_THREAD(parser_process, ev, data)
             RTIMER_BUSYWAIT(5);
             etimer_set( &radiotimer, time_until_poll);
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&radiotimer));
-            
             NETSTACK_RADIO.on();
             
             
@@ -282,10 +281,9 @@ PROCESS_THREAD(parser_process, ev, data)
         {
             //printf("I'm transmitting in the %dth slot\n", buf[1]);
             datasender(buf[1]);
-            //printf("alalalalalallalaone\n");
+            printf("alalalalalallalaone\n");
 
             NETSTACK_RADIO.off();
-            RTIMER_BUSYWAIT(5);
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&next_beacon_etimer));
             NETSTACK_RADIO.on();
             printf("radio back on, beacon in ~2s \n");

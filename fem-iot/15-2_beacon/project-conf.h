@@ -3,10 +3,6 @@
 #define PROJECT_CONF_H_
 /*------------------------*/
 
-
-#define LOG_CONF_LEVEL_NULLNET LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_RADIO LOG_LEVEL_DBG
-
 /*#undef  NETSTACK_CONF_RADIO
 #define NETSTACK_CONF_RADIO         cc1200_driver
 #define CC1200_CONF_USE_GPIO2       0

@@ -274,7 +274,8 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
   nullnet_len = sizeof(beaconbuf);
   nullnet_set_input_callback(input_callback); //Comment if we don't need a rcv callback
 
-
+  etimer_set(&beacon_timer, 5*CLOCK_SECOND);
+  PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&beacon_timer));
 
   
   while(1) {
