@@ -11,6 +11,15 @@
 
 
 #include "sys/log.h"
+
+
+
+/*--------------------------------------------*/
+
+/*
+Program made to unicast send to a sta, for testing. 
+*/
+
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
 

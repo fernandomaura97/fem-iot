@@ -226,6 +226,7 @@ void input_callback(const void *data, uint16_t len,
 PROCESS_THREAD(nullnet_example_process, ev, data)
 {
   static struct etimer periodic_timer;
+  static struct etimer send_timer;
   static struct etimer send_timer2;
   static struct etimer beacon_timer;
 
@@ -255,10 +256,11 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
   uint8_t beacon_type = 0;
   printf("beacon type: %d\n", beacon_type);
 
-  uint8_t cycle_time = random_rand() % 10;
-  printf("cycle time: %d\n", cycle_time); //idgaf about this (yet)
+  //uint8_t cycle_time = random_rand() % 10;
+  //printf("cycle time: %d\n", cycle_time); //idgaf about this (yet)
+  uint8_t beacon_n =0;
 
-  uint8_t frame = beacon_type << 6 | cycle_time;
+  uint8_t frame = beacon_type << 6 | beacon_n;
   printf("frame: %d\n", frame);
  
  
@@ -287,19 +289,23 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
     /*--------------------------------------------------------------*/
     //Send 3 beacons: It's problematic at the moment, since we have to take into account factors like the node not listening to all beacons, etc.
     /*--------------------------------------------------------------*/
-    //static uint8_t i;
-    /*for (i=0; i<3; i++) { 
-      etimer_set(&send_timer, T_GUARD); //Time between beacons
-      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&send_timer));
-      beaconbuf[2] = i+1;
-      LOG_INFO("Beacon %d sent, data %d, B_num %d", (i+1), sensor_type_byte, beaconbuf[2]);
+    static uint8_t i;
+    for (i=0; i<3; i++) { 
       
+      LOG_INFO("Beacon %d sent, data %d", i, sensor_type_byte);
+      beacon_n = i << 4; 
+      frame = beacon_type << 6 | beacon_n;
+      printf("frame: %02x", frame);
+      beaconbuf[0] = frame;
 
       nullnet_buf = (uint8_t *)&beaconbuf;
       nullnet_len = sizeof(beaconbuf);
       NETSTACK_NETWORK.output(NULL); 
+
+      etimer_set(&send_timer, T_GUARD); //Time between beacons
+      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&send_timer));
       
-    }*/
+    }
     /*--------------------------------------------------------------*/
     sensor_type_byte = 0b11111111;
     beaconbuf[1] = sensor_type_byte;

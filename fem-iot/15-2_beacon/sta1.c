@@ -202,9 +202,10 @@ PROCESS_THREAD(parser_process, ev, data)
 
     frame = buf[0];
     //uint8_t* data = buf + 1;
-    B_f = (frame & 0xC0) >> 6;
+    B_f = (frame & 0b11000000) >> 6;
+    
     //B_timer = frame & 0x3f;
-    B_n = buf[2];
+    B_n = (frame & 0b00110000) >> 4;
 
     //printf("frame: %d\t", B_f);
    // printf("Beacon_timer: %d\n", B_timer);
@@ -213,33 +214,41 @@ PROCESS_THREAD(parser_process, ev, data)
 
 
     if(B_f== f_BEACON){
-        printf("It's a Beacon frame, n: %d, bitmask: %d \n", B_n, buf[1]);
-        clock_time_t bufvar = T_BEACON  - (2*CLOCK_SECOND);
-        printf("setting timer for %lu ticks, %lu seconds (+2) until beacon\n", bufvar, (bufvar/CLOCK_SECOND));
-
-        etimer_set(&next_beacon_etimer, (358*CLOCK_SECOND)); //use rtimer?
-
-        timer_set(&btimer, 1.5 * CLOCK_SECOND);
+        printf("BEACON frame! n: %d, bitmask: %d \n", B_n, buf[1]);
         
+//        timer_set(&btimer, (B_n+1)* CLOCK_SECOND/2);
+
+        if(B_n==0){
+            timer_set(&btimer, CLOCK_SECOND);
+        }
+        else if(B_n==1)
+            timer_set(&btimer, CLOCK_SECOND*0.5);
+        }
         uint8_t bitmask = buf[1];
         uint8_t i_buf;
         static bool txflag = 0;
         int i;
-        printf("beacon is asking for ");
-        for (i = 0; i < 8; i++) {
-            if (bitmask & (1 << i)) {
-                printf("%d \t", (i+1));
-                if((i+1) == NODEID)
-                {   
 
-                    i_buf = i;
-                    txflag = 1;
-                    
-                }
-            }
-        
-        } 
-        //PROCESS_WAIT_UNTIL( B_n == 3 || timer_expired(&btimer));
+        if(!txflag){ //only print once
+            printf("beacon is asking for ");
+            for (i = 0; i < 8; i++) {
+                if (bitmask & (1 << i)) {
+                    printf("%d \t", (i+1));
+                    if((i+1) == NODEID)
+                    {   
+                        i_buf = i;
+                        txflag = 1;
+                    }
+                }          
+            } 
+        }
+        PROCESS_WAIT_UNTIL( B_n == 2 || timer_expired(&btimer));
+        clock_time_t bufvar = 357*CLOCK_SECOND);
+        printf("setting timer for %lu ticks, %lu seconds (+3) until beacon\n", bufvar, (bufvar/CLOCK_SECOND));
+
+        etimer_set(&next_beacon_etimer, (357*CLOCK_SECOND)); //use rtimer maybe?
+
+
         if(txflag) {
             printf("I'm transmitting in the %dth slot\n", (i_buf+1));
             
@@ -269,14 +278,14 @@ PROCESS_THREAD(parser_process, ev, data)
 
             NETSTACK_RADIO.on();
 
-            printf("radio back on, about to receive beacons\n");
+            printf("radio back on, beacon in ~2s\n");
         }
         
     }
 
     else if( B_f == f_POLL)
     {
-        printf("It's a Poll frame!\n");
+        printf("POLL frame!\n");
         printf("received poll for %d, I am node %d\n", buf[1], NODEID);
         if(buf[1] == NODEID)
         {

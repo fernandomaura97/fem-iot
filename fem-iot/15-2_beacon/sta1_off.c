@@ -171,11 +171,11 @@ PROCESS_THREAD(parser_process, ev, data)
     static struct etimer radiotimer;
     static struct etimer next_beacon_etimer;
     static struct timer btimer; 
-
-    
+    static bool txflag;
 
 
     PROCESS_BEGIN();
+    txflag=0;
     printf("my node id %d\n", NODEID);
     
     nullnet_set_input_callback(input_callback);
@@ -223,7 +223,7 @@ PROCESS_THREAD(parser_process, ev, data)
         
         uint8_t bitmask = buf[1];
         uint8_t i_buf;
-        static bool txflag = 0;
+        txflag = 0;
         int i;
         printf("beacon is asking for ");
         for (i = 0; i < 8; i++) {
@@ -285,7 +285,7 @@ PROCESS_THREAD(parser_process, ev, data)
 
             NETSTACK_RADIO.off();
             printf("radio is OFF\n");
-            RTIMER_BUSYWAIT(25);           
+                       
           
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&next_beacon_etimer));
             printf("radio back on\n");
