@@ -18,7 +18,6 @@
 #define f_DATA 0x02
 #define f_ENERGEST 0x03
 
-#define NODEID  1
 
 #define T_MDB  (10 * CLOCK_SECOND)
 #define T_SLOT  (1.5 * CLOCK_SECOND)
@@ -131,6 +130,7 @@ void datasender( uint8_t id )
 
 /* Configuration */
 #define SEND_INTERVAL (8 * CLOCK_SECOND)
+static uint8_t NODEID; 
 
 static linkaddr_t coordinator_addr ; 
 /*---------------------------------------------------------------------------*/
@@ -178,6 +178,7 @@ PROCESS_THREAD(parser_process, ev, data)
 
 
     PROCESS_BEGIN();
+    NODEID= random_rand() % 8;
     //nullnet_set_input_callback(input_callback);
     printf("my node id %d\n", NODEID);
     

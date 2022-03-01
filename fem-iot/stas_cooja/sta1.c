@@ -328,10 +328,10 @@ PROCESS_THREAD(parser_process, ev, data)
     }
 
 
-    else{
+    /*else{
         printf("Unknown frame\n");
         printf("B_f  %02x , B_n %02x, buf[0,1,2]: %02x %02x %02x\n", B_f, B_n, buf[0], buf[1], buf[2] );
-    }
+    }*/
             
 
    
