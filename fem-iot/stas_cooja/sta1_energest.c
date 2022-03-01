@@ -8,6 +8,8 @@
 
 #include "net/packetbuf.h"
 
+#include "sys/energest.h"
+
 /* Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "App"
@@ -37,6 +39,8 @@
 
     } mydata;
  static bool txflag = 0;
+
+ 
 
 
 
@@ -158,7 +162,8 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
   PROCESS_BEGIN();
   nullnet_set_input_callback(input_callback);
   while(1) {
-    etimer_set(&periodic_timer, CLOCK_SECOND);
+    
+    etimer_set(&periodic_timer, 5*CLOCK_SECOND);
     PROCESS_YIELD();
    
   }
@@ -182,13 +187,9 @@ PROCESS_THREAD(parser_process, ev, data)
     printf("my node id %d\n", NODEID);
     
 
-    while(1) {
+    while(1) {    
 
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-
-    
-    //?????????????????????? ZONE
-    
     buf = packetbuf_dataptr();	
     //uint8_t* sensor_reading = (uint8_t*)buf;
 
@@ -324,6 +325,31 @@ PROCESS_THREAD(parser_process, ev, data)
     else if (B_f ==f_ENERGEST){
         printf("Energest frame\n");
         
+        energest_flush();  //update all times
+         printf("\nEnergest:\n");
+         printf(" CPU          %4llu LPM      %4llu  Total time %4llu\n",
+           energest_type_time(ENERGEST_TYPE_CPU),
+           energest_type_time(ENERGEST_TYPE_LPM),
+           ENERGEST_GET_TOTAL_TIME());
+        
+        printf(" Radio LISTEN %4llu TRANSMIT %4llu OFF      %4llu\n",
+           energest_type_time(ENERGEST_TYPE_LISTEN),
+           energest_type_time(ENERGEST_TYPE_TRANSMIT),
+           (ENERGEST_GET_TOTAL_TIME() - energest_type_time(ENERGEST_TYPE_TRANSMIT) - energest_type_time(ENERGEST_TYPE_LISTEN)));
+
+        uint64_t enerbuf[6];
+        
+        enerbuf[0] = energest_type_time(ENERGEST_TYPE_CPU);
+        enerbuf[1] = energest_type_time(ENERGEST_TYPE_LPM);
+        enerbuf[2] = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+        enerbuf[3] = energest_type_time(ENERGEST_TYPE_LISTEN);
+        enerbuf[5] = ENERGEST_GET_TOTAL_TIME();
+        enerbuf[4] = enerbuf[5] - enerbuf[2] - enerbuf[3];
+
+        nullnet_buf = (uint8_t*)enerbuf;
+        nullnet_len = sizeof(enerbuf);
+        NETSTACK_NETWORK.output(NULL);
+       
         //instead of sending data, send energest metrics
     }
 
@@ -332,21 +358,8 @@ PROCESS_THREAD(parser_process, ev, data)
         printf("Unknown frame\n");
         printf("B_f  %02x , B_n %02x, buf[0,1,2]: %02x %02x %02x\n", B_f, B_n, buf[0], buf[1], buf[2] );
     }*/
-            
 
-   
-  
-    
     }
-
-
     PROCESS_END();
-
 }
-
-
-
-
-      
-
-
+  

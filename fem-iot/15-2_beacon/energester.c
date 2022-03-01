@@ -8,7 +8,7 @@
 #include "random.h"
 #include "sys/clock.h"
 #include <stdlib.h>
-
+#include "sys/energest.h"
 
 #include "sys/log.h"
 #define LOG_MODULE "App"
@@ -73,8 +73,21 @@ void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {
   printf("Callback \t received rx: %d\n", *(uint8_t *)data); 
-  uint8_t *buf1 = (uint8_t *)malloc(sizeof(uint8_t) + 2*sizeof(float)); //allocate 9bytes (maximum payload)
+   uint8_t *buf1 = (uint8_t *)malloc(sizeof(uint8_t) + 2*sizeof(float)); //allocate 9bytes (maximum payload)
   memcpy(buf1, data, len);
+  if(len==48){
+    
+    uint32_t *enerbuf = (uint32_t*)malloc(6*sizeof(uint32_t));
+    memcpy(enerbuf, data, sizeof(enerbuf));
+    printf("i guess energest packet");
+    printf("CPU %4lu LPM %4lu TX %4lu RX %4lu OFF %4lu TOTAL %4lu\n", enerbuf[0], enerbuf[1], enerbuf[2], enerbuf[3], enerbuf[4], enerbuf[5]);
+    
+    printf("in seconds:\n CPU %4lu LPM %4lu TX %4lu RX %4lu OFF %4lu TOTAL %4lu\n", enerbuf[0]/ENERGEST_SECOND, enerbuf[1]/ENERGEST_SECOND, enerbuf[2]/ENERGEST_SECOND, enerbuf[3]/ENERGEST_SECOND, enerbuf[4]/ENERGEST_SECOND, enerbuf[5]/ENERGEST_SECOND);
+    
+    free(enerbuf);
+
+  }
+   
   
   uint32_t fbuf; //float buffer
   union {
@@ -92,7 +105,10 @@ void input_callback(const void *data, uint16_t len,
     uint8_t temp_array[2];
       } ua2;
 
-    switch(buf1[0]){
+  
+
+
+  switch(buf1[0]){
       
       
       case NODEID_MGAS1:
@@ -199,6 +215,8 @@ void input_callback(const void *data, uint16_t len,
         printf("}\n");
         break;
         //AOK!!
+      case 9:
+        printf("energesto\n");
       
       default:
         /*printf("unknown nodeID %d\n", buf1[0]);
@@ -331,12 +349,14 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
     t = clock_time();
     printf("seconds since boot: %lu\n", t/CLOCK_SECOND);
     static uint8_t i2;
+
+   
     
     for (i2=1; i2<9; i2++) {
       if (sensor_type_byte & 0x01) {
 
         sensor_type_byte = sensor_type_byte >> 1;
-        pollbuf[0] = 0b01000000;
+        pollbuf[0] = 0x03<<6;
         //printf("pollbuf[0]: %d\n", pollbuf[0]);
         pollbuf[1] = i2;
 
@@ -370,6 +390,9 @@ PROCESS_THREAD(nullnet_example_process, ev, data)
 
       }
     }
+  
+
+
 
     printf("All finished\n\n\n\n");
 
