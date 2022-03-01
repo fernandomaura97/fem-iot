@@ -271,7 +271,7 @@ PROCESS_THREAD(parser_process, ev, data)
             NETSTACK_RADIO.on();
             
             
-            NETSTACK_MAC.on(); //test this
+            //NETSTACK_MAC.on(); //test this
             
             //NETSTACK_RADIO.on();
             printf("radio back on\n");
