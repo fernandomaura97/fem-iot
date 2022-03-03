@@ -72,7 +72,7 @@ AUTOSTART_PROCESSES(&nullnet_example_process);
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {
-  printf("Callback \t received rx: %d\n", *(uint8_t *)data); 
+  printf("Callback received rx: %d\n", *(uint8_t *)data); 
   uint8_t *buf1 = (uint8_t *)malloc(sizeof(uint8_t) + 2*sizeof(float)); //allocate 9bytes (maximum payload)
   memcpy(buf1, data, len);
   

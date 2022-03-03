@@ -18,7 +18,7 @@
 #define f_DATA 0x02
 #define f_ENERGEST 0x03
 
-#define NODEID  6
+#define NODEID  8
 
 #define T_MDB  (10 * CLOCK_SECOND)
 #define T_SLOT  (1.5 * CLOCK_SECOND)

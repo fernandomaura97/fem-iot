@@ -174,14 +174,10 @@ PROCESS_THREAD(parser_process, ev, data)
     static struct etimer btimer; 
     static uint8_t* buf;
 
-    
-
-
     PROCESS_BEGIN();
     //nullnet_set_input_callback(input_callback);
     printf("my node id %d\n", NODEID);
     
-
     while(1) {
 
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
@@ -288,9 +284,7 @@ PROCESS_THREAD(parser_process, ev, data)
             NETSTACK_RADIO.on();
 
             printf("radio back on, beacon in ~2s\n");
-        }
-        
-    
+        }    
     }
     if( B_f == f_POLL)
     {
@@ -300,8 +294,6 @@ PROCESS_THREAD(parser_process, ev, data)
         {
             //printf("I'm transmitting in the %dth slot\n", buf[1]);
             datasender(buf[1]);
-            //printf("alalalalalallalaone\n");
-
             NETSTACK_RADIO.off();
             RTIMER_BUSYWAIT(5);
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&next_beacon_etimer));
@@ -331,11 +323,7 @@ PROCESS_THREAD(parser_process, ev, data)
     else{
         printf("Unknown frame\n");
         printf("B_f  %02x , B_n %02x, buf[0,1,2]: %02x %02x %02x\n", B_f, B_n, buf[0], buf[1], buf[2] );
-    }
-            
-
-   
-  
+    } 
     
     }
 
@@ -343,10 +331,3 @@ PROCESS_THREAD(parser_process, ev, data)
     PROCESS_END();
 
 }
-
-
-
-
-      
-
-
