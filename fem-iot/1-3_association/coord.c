@@ -144,7 +144,7 @@ while(1)
   uint8_t ibuf[3] = {0x0B, 0x0C, 0x0D};
   nullnet_buf = (uint8_t*)ibuf;
   nullnet_len = 3;
-  NETSTACK_NETWORK.output(NULL);
+  NETSTACK_NETWORK.output(&buffer_addr);
   //nullnet_set_input_callback(input_callback);
   //LOG_INFO("Associating done\n");
 }
