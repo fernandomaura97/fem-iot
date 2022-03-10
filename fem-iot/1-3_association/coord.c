@@ -133,12 +133,6 @@ while(1)
         }
     }
 }
-
-
-
-
-
-
   //nullnet_set_input_callback(NULL);
   LOG_INFO("Associating nowwwwww\n");
   uint8_t ibuf[3] = {0x0B, 0x0C, 0x0D};

@@ -75,7 +75,7 @@ void input_callback(const void *data, uint16_t len,
 {
     LOG_DBG("Callback received from ");
     LOG_DBG_LLADDR(src);
-    LOG_DBG_("\n");
+    LOG_DBG("\n");
 
 
          
