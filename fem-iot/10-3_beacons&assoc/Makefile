@@ -1,4 +1,4 @@
-CONTIKI_PROJECT = coord sta
+CONTIKI_PROJECT = gw sta
 
 all: $(CONTIKI_PROJECT)
 
