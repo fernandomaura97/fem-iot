@@ -13,7 +13,7 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
 
-#define DEBUG 0
+#define DEBUG 1
 /*
 #define f_BEACON 0x00
 #define f_POLL 0x01
@@ -162,7 +162,7 @@ void input_callback(const void *data, uint16_t len,
 {   
   #if DEBUG
   LOG_INFO("Callback received from ");
-  LOG_INFO_LLADR(src);
+  LOG_INFO_LLADDR(src);
   LOG_INFO("\n");
   #endif
   from = *src;
@@ -180,11 +180,10 @@ PROCESS_THREAD(radio_process,ev,data)
 
     static uint8_t* datapoint;
     
-
     PROCESS_BEGIN();
     nullnet_set_input_callback(input_callback);
 
-    PROCESS_YIELD();
+    //PROCESS_YIELD();
     while(1)
     {
         
@@ -204,7 +203,8 @@ PROCESS_THREAD(radio_process,ev,data)
 
         case 0:
             LOG_INFO("Beacon received\n");
-            coordinator_addr = from;
+            
+            linkaddr_copy(&coordinator_addr, &from);
             process_poll(&associator_process);
             break;
 
@@ -329,7 +329,8 @@ PROCESS_THREAD(associator_process, ev,data){
         
         
         
-        B_n = buf[0] & 0b00011111;
+        B_n = (buf[0] & 0b00011111);
+        printf("B_n = %d\n", B_n);
 
 
     

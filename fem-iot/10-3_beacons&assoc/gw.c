@@ -143,14 +143,16 @@ PROCESS_THREAD(coordinator_process, ev,data)
         {
             beaconbuf[1] = bitmask; 
            
-            
+            beaconbuf[0] = i; 
             nullnet_buf = (uint8_t*)&beaconbuf;
             nullnet_len = sizeof(beaconbuf);
             NETSTACK_NETWORK.output(NULL);
             LOG_INFO("beacon %d sent, bitmask %d\n", i, beaconbuf[1]);
             
-            if(i<2) etimer_set(&guard_timer, T_GUARD); //set the timer for the next interval
+            if(i<2){
+            etimer_set(&guard_timer, T_GUARD); //set the timer for the next interval
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&guard_timer));
+            }
         }
         
         etimer_set(&mm_timer, T_MM); //set the timer for the next interval
