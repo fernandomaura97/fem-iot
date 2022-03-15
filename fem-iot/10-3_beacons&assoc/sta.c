@@ -154,7 +154,7 @@ PROCESS(sta_process, "STA process");
 PROCESS(associator_process,"associator process");
 PROCESS(radio_process, "Radio process");
 
-AUTOSTART_PROCESSES(&sta_process, &associator_process, &radio_process);
+AUTOSTART_PROCESSES(&radio_process, &associator_process,&sta_process);
 /*---------------------------------------------------------------------------*/
 
 void input_callback(const void *data, uint16_t len,
@@ -182,6 +182,8 @@ PROCESS_THREAD(radio_process,ev,data)
     
 
     PROCESS_BEGIN();
+    nullnet_set_input_callback(input_callback);
+
     PROCESS_YIELD();
     while(1)
     {
@@ -364,6 +366,9 @@ PROCESS_THREAD(associator_process, ev,data){
             /*---------------------------------------------------------------------------*/
             //WHAT TO SEND IN HERE? association request: 0x0
 
+          
+            buf[0] = 0b00100000; //association request
+            //buf[0] |= ???;
             /*---------------------------------------------------------------------------*/
             nullnet_buf = (uint8_t *)buf;
             nullnet_len = sizeof(*buf);

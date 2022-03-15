@@ -430,6 +430,7 @@ PROCESS_THREAD(callback_process,ev,data){
     PROCESS_YIELD();
 
     while(1) {
+        PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
         uint8_t *buf = (uint8_t *)malloc(cb_len);
         buf = packetbuf_dataptr();
         
