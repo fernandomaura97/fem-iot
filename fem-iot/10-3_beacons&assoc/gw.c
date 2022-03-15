@@ -39,8 +39,10 @@ typedef struct sensor_data_t {
   float no2;
 } sensor_data_t;
 static sensor_data_t sensors;
+static uint16_t cb_len;
+static linkaddr_t from; 
 
-
+#define DEBUG 0
 
 #define ROUTENUMBER 8 //for now, then it should be bigger
 
@@ -55,6 +57,11 @@ const linkaddr_t addr_empty = {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}
 #define T_GUARD (0.5 * CLOCK_SECOND * 1/SPEED_NW)
 #define T_SLOT (1.5 * CLOCK_SECOND *  1/SPEED_NW)
 
+#define f_BEACON 0x00
+#define f_POLL 0x01
+#define f_DATA 0x02
+#define f_ENERGEST 0x03
+
 
 //static uint8_t *buf;
 
@@ -65,59 +72,26 @@ PROCESS(coordinator_process, "fem-iot coordinator process");
 
 PROCESS(parser_process, "Parsing process");
 PROCESS(association_process, "Association process");
+PROCESS(callback_process,"Callback process");
 
-AUTOSTART_PROCESSES(&coordinator_process, &parser_process, &association_process);
+AUTOSTART_PROCESSES(&coordinator_process, &parser_process, &association_process, &callback_process);
 
 /*---------------------------------------------------------------------------*/
 
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
-{
+{   
+    #if DEBUG
     LOG_DBG("Callback received from ");
     LOG_DBG_LLADDR(src);
     LOG_DBG("\n");
+    #endif
+
+    from = *src;
+    cb_len = len; //save the length of the received packet
 
 
-         
-    uint8_t *buf = (uint8_t *)malloc(len);
-    memcpy(buf, data, len);
-    
-    switch ((buf[0] & 224) >> 5 ) { //check the first 3 bits of the first byte
-
-        case 0:
-            LOG_INFO("Beacon received ??\n"); //this is only for stas to hear
-            break;
-
-        case 1:
-            LOG_INFO("Association request received\n");
-
-            linkaddr_copy(&buffer_addr, src );
-            process_poll(&association_process);    
-            break;
-
-        case 2:
-            LOG_INFO("Association response received ??\n"); //this is only for stas to hear
-            break;
-
-        case 3: 
-            LOG_INFO("Poll request received ?? \n"); //this is only for stas to hear
-            break;
-
-        case 4:
-            LOG_INFO("Sensor Data received\n");
-            process_poll(&parser_process);
-            break;          
-
-        case 5: 
-            LOG_INFO("Energest Data received\n");
-            /*Are we going to use this really? Maybe checking the consumptions in the lab through serial monitor
-            should be enough for making a model, since the network is "deterministic" */
-            break;
-
-        default:
-            LOG_INFO("Unknown packet received\n");
-            break;
-    }
+    process_poll(&callback_process);
 }
 
 
@@ -447,5 +421,55 @@ PROCESS_THREAD(association_process,ev,data){
         }
  }
     
+    PROCESS_END();
+}
+
+PROCESS_THREAD(callback_process,ev,data){
+
+    PROCESS_BEGIN();
+    PROCESS_YIELD();
+
+    while(1) {
+        uint8_t *buf = (uint8_t *)malloc(cb_len);
+        buf = packetbuf_dataptr();
+        
+        switch ((buf[0] & 224) >> 5 ) { //check the first 3 bits of the first byte
+
+            case 0:
+                LOG_INFO("Beacon received ??\n"); //this is only for stas to hear
+                break;
+
+            case 1:
+                LOG_INFO("Association request received\n");
+
+                linkaddr_copy(&buffer_addr, &from );
+                process_poll(&association_process);    
+                break;
+
+            case 2:
+                LOG_INFO("Association response received ??\n"); //this is only for stas to hear
+                break;
+
+            case 3: 
+                LOG_INFO("Poll request received ?? \n"); //this is only for stas to hear
+                break;
+
+            case 4:
+                LOG_INFO("Sensor Data received\n");
+                process_poll(&parser_process);
+                break;          
+
+            case 5: 
+                LOG_INFO("Energest Data received\n");
+                /*Are we going to use this really? Maybe checking the consumptions in the lab through serial monitor
+                should be enough for making a model, since the network is "deterministic" */
+                break;
+
+            default:
+                LOG_INFO("Unknown packet received\n");
+                break;
+        }
+    }
+
     PROCESS_END();
 }
