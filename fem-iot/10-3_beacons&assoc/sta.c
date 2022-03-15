@@ -5,7 +5,7 @@
 #include <stdio.h> /* For printf() */
 #include "random.h"
 #include "dev/radio.h"
-
+#include <stdlib.h>
 #include "net/packetbuf.h"
 
 /* Log configuration */
@@ -143,7 +143,7 @@ void datasender( uint8_t id )
             printf("?");
           
             break;
-    }DBG
+    }
 }
 
 
@@ -195,7 +195,7 @@ PROCESS_THREAD(radio_process,ev,data)
         
         LOG_INFO("Parsing...\n");
         uint8_t frame_header = (datapoint[0] & 224) >> 5;
-        uint8_t frame_type = datapoint[0] & 31; //WHAT TO DO WITH THIS¿¿¿??
+        //uint8_t frame_type = datapoint[0] & 31; //WHAT TO DO WITH THIS¿¿¿??
 
 
         switch(frame_header ) {
@@ -213,7 +213,8 @@ PROCESS_THREAD(radio_process,ev,data)
         case 2: 
             LOG_INFO("Association response received\n");
         
-            if(from == coordinator_addr) {
+            //if(from == coordinator_addr) {
+            if(linkaddr_cmp(&from, &coordinator_addr)) {  
                 is_associated = true;
                 printf("associated nowwww\n");
             }
@@ -241,7 +242,7 @@ PROCESS_THREAD(radio_process,ev,data)
             LOG_INFO("Unknown packet received\n");
             break;
         } //switch
-        free(datapoint);
+        //free(datapoint);
     } //while
     PROCESS_END();
     
@@ -251,7 +252,7 @@ PROCESS_THREAD(radio_process,ev,data)
 
 PROCESS_THREAD(sta_process, ev,data){
 
-     static struct mydatas {
+    /*static struct mydatas {
         uint8_t NodeID;
         int16_t temperature;
         int16_t hum;
@@ -269,12 +270,15 @@ PROCESS_THREAD(sta_process, ev,data){
     mydata.pm10 = 45;
     mydata.hum = 560;
     mydata.temperature = 670;
-
+    */
 
     PROCESS_BEGIN();
 
     PROCESS_YIELD();
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+
+    uint8_t *buf = (uint8_t *)malloc(len_msg);
+    buf = packetbuf_dataptr();
        
 
     printf("POLL frame!\n");
@@ -302,9 +306,12 @@ PROCESS_THREAD(sta_process, ev,data){
 }
 
 PROCESS_THREAD(associator_process, ev,data){
+    static struct etimer asotimer;
     
-    
-
+    uint8_t i, i_buf; 
+    static uint8_t ix;
+    static uint8_t *buf;
+    static uint8_t B_n;
     PROCESS_BEGIN();
 
     
@@ -315,6 +322,15 @@ PROCESS_THREAD(associator_process, ev,data){
 
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL); //wait until beacon 
 
+        buf = (uint8_t *)malloc(len_msg);
+        buf = packetbuf_dataptr();
+        
+        
+        
+        B_n = buf[0] & 0b00011111;
+
+
+    
         if(B_n==0){
             etimer_set(&btimer, CLOCK_SECOND);
             }
@@ -322,7 +338,7 @@ PROCESS_THREAD(associator_process, ev,data){
             etimer_set(&btimer, CLOCK_SECOND*0.5);
             }
 
-        bitmask = datapoint[1];
+        bitmask = buf[1];
         printf("beacon is asking for ");
         
         if(txflag == 0){
@@ -361,29 +377,27 @@ PROCESS_THREAD(associator_process, ev,data){
                 /*---------------------------------------------------------------------------*/
                 break; 
             }
+
             etimer_set(&asotimer, 5* CLOCK_SECOND);
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&asotimer));
    
             } //while
     
-        if(B_n != 2) 
-        {
-            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&btimer));
-
-        }
+            if(B_n != 2){
+                PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&btimer));
+                }
         clock_time_t bufvar = 357*CLOCK_SECOND;
         printf("setting timer for %lu ticks, %lu seconds (+3) until beacon\n", bufvar, (bufvar/CLOCK_SECOND));
 
         etimer_set(&next_beacon_etimer, (357*CLOCK_SECOND)); //use rtimer maybe?
 
-        uint8_t *buf = (uint8_t *)malloc(len_msg);
+        //uint8_t *buf = (uint8_t *)malloc(len_msg);
 
         if(txflag) {
             printf("I'm transmitting in the %dth slot\n", (i_buf+1));
             
             time_until_poll = T_MDB + ((NODEID-1) * (T_SLOT + T_GUARD)) - T_GUARD;
             printf("radio off, time until radio on: %lu ticks, %lu seconds\n", time_until_poll ,time_until_poll/CLOCK_SECOND);              
-            //NETSTACK_RADIO.off();
             NETSTACK_RADIO.off();
             RTIMER_BUSYWAIT(5);
             etimer_set( &radiotimer, time_until_poll);
