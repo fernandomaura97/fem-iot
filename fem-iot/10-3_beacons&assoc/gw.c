@@ -166,7 +166,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
         {
            if(bitmask & 0x01){
                bitmask = bitmask >> 1;
-                pollbuf[0] = 0b01000000;
+                pollbuf[0] = 0b01100000; //poll is 3
                 pollbuf[1] = i;
 
                 nullnet_buf = (uint8_t*)&pollbuf;
@@ -388,9 +388,6 @@ PROCESS_THREAD(association_process,ev,data){
 
 
     while(1){
-
-        PROCESS_YIELD();
-
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
 
         uint8_t i;
@@ -444,7 +441,6 @@ PROCESS_THREAD(callback_process,ev,data){
 
             case 1:
                 LOG_INFO("Association request received\n");
-
                 linkaddr_copy(&buffer_addr, &from );
                 process_poll(&association_process);    
                 break;

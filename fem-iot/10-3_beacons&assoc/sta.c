@@ -216,9 +216,12 @@ PROCESS_THREAD(radio_process,ev,data)
             LOG_INFO("Association response received\n");
         
             //if(from == coordinator_addr) {
-            if(linkaddr_cmp(&from, &coordinator_addr)) {  
+            if(!linkaddr_cmp(&from, &coordinator_addr)) {  
                 is_associated = true;
                 printf("associated nowwww\n");
+            }
+            else{
+                LOG_INFO("Not associated, associating now\n");
             }
             
             /// ASSOC_ACK = TRUE         
@@ -320,14 +323,12 @@ PROCESS_THREAD(associator_process, ev,data){
     
     while(1){
 
-        PROCESS_YIELD();
-
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL); //wait until beacon 
 
         buf = (uint8_t *)malloc(len_msg);
         buf = packetbuf_dataptr();
         
-        
+        printf("buf[0], buf[1] buf[2] :%02x %02x %02x ", buf[0], buf[1], buf[2]);
         
         B_n = (buf[0] & 0b00011111);
         printf("B_n = %d\n", B_n);
@@ -362,7 +363,7 @@ PROCESS_THREAD(associator_process, ev,data){
             {
             //augment TX POWER and send again. If no response, "poison"
             NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, power_levels[ix]);
-            printf("tx power: %d\n", power_levels[ix]);
+            printf("tx power: %02x\n", power_levels[ix]);
 
             /*---------------------------------------------------------------------------*/
             //WHAT TO SEND IN HERE? association request: 0x0
@@ -376,7 +377,7 @@ PROCESS_THREAD(associator_process, ev,data){
             NETSTACK_NETWORK.output(&coordinator_addr);
 
             ix++;
-            if(ix >= 2)
+            if(ix >= 3)
             {
                 LOG_INFO("Association process failed\n");
                 //POISON!
