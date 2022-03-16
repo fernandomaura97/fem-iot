@@ -52,6 +52,7 @@ static bool is_associated;
 
 static uint8_t bitmask;
 static bool amipolled;
+static uint8_t i_buf;
 
 const uint8_t power_levels[3] = {0x46, 0x71, 0x7F}; // 0dB, 8dB, 14dB
 
@@ -78,19 +79,18 @@ uint8_t who_bitmask(uint8_t b) //prints which nodes the beacon is polling, and i
     uint8_t pos = 0;
     amipolled = 0; //reset amipolled flag
     
-    PRINTF("Beacon is asking for: ");
+    printf("Beacon is asking for: ");
     for (i2 = 0; i2 < 8; i2++) {
         if (bitmask & (1 << i2)) { //for each bit in bitmask
             PRINTF("%d \t", (i2+1));
             if((i2+1) == NODEID)
             {   
-                pos = i2+1;
+                pos = i2;
                 amipolled = 1;
-                
             }
         }   
     }
-    PRINTF("\n");
+    printf("\n");
     return pos;
 }
 
@@ -430,7 +430,7 @@ PROCESS_THREAD(associator_process, ev,data){
     static struct etimer asotimer;
     
     
-    static uint8_t i_buf; 
+     
     static uint8_t ix;
     static uint8_t *buf;
     static uint8_t B_n;
@@ -469,7 +469,7 @@ PROCESS_THREAD(associator_process, ev,data){
             i_buf = who_bitmask(buf[1]);
             txflag = 1;
         }            
-        
+        printf("I_buf == %d\n", i_buf);
         clock_time_t bufvar = 357*CLOCK_SECOND;
         printf("setting timer for %lu ticks, %lu seconds (+3) until beacon\n", bufvar, (bufvar/CLOCK_SECOND));
 
@@ -537,7 +537,7 @@ PROCESS_THREAD(associator_process, ev,data){
             txflag = 0;
 
         }
-        else if (amipolled ==0) { //if not polled, just wait for the next beacon
+        else if (amipolled == 0) { //if not polled, just wait for the next beacon
             printf("Radio off until the next beacon\n");
             NETSTACK_RADIO.off();
             RTIMER_BUSYWAIT(5);
