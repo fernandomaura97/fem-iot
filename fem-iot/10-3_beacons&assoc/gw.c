@@ -465,10 +465,10 @@ PROCESS_THREAD(callback_process,ev,data){
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
         //buf = (uint8_t *)malloc(cb_len);
         buf = packetbuf_dataptr();
-        frame = (buf[0] & 224)>>5;
+        frame = (buf[0] & 0b11100000)>>5;
 
        
-        /*
+        /*                  
         switch ((buf[0] & 224) >> 5 ) { //check the first 3 bits of the first byte
 
             case 0:
@@ -502,7 +502,8 @@ PROCESS_THREAD(callback_process,ev,data){
 
             default:
                 LOG_INFO("Unknown packet received\n");
-                break;
+       
+                      break;
         }
         */
         if (frame == 0){
@@ -532,9 +533,7 @@ PROCESS_THREAD(callback_process,ev,data){
         
         //free(buf);
     
-    printf("endloop\n");
+    
     } //while      
-
-
     PROCESS_END();
 }

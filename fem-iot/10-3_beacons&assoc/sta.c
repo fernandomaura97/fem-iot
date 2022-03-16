@@ -111,7 +111,8 @@ void datasender( uint8_t id )
         case 3:
             printf("Node %d, multigas\n", id);
 
-            megabuf[0] = id;
+            //megabuf[0] = id;
+            megabuf[0] = 0b10000000 | id;
             memcpy(&megabuf[1], &mydata.co, sizeof(mydata.co));
             memcpy(&megabuf[5], &mydata.no2, sizeof(mydata.no2));
             printf("Sending %d %d %d %d %d %d %d %d %d\n", megabuf[0], megabuf[1], megabuf[2], megabuf[3], megabuf[4], megabuf[5], megabuf[6], megabuf[7], megabuf[8]);
@@ -246,12 +247,14 @@ PROCESS_THREAD(radio_process,ev,data)
             LOG_INFO("Association response received\n");
         
             //if(from == coordinator_addr) {
-            if(!linkaddr_cmp(&from, &coordinator_addr)) {  
-                is_associated = true;
-                printf("associated nowwww\n");
+            if(linkaddr_cmp(&from, &coordinator_addr)) { 
+                LOG_INFO("Not associated, associating now\n");
+                is_associated = true; 
+                
+                
             }
             else{
-                LOG_INFO("Not associated, associating now\n");
+               LOG_DBG("error, different adresses");
             }
             
             /// ASSOC_ACK = TRUE         
@@ -262,6 +265,9 @@ PROCESS_THREAD(radio_process,ev,data)
         if(is_associated) {
             process_poll(&sta_process);    
             }
+        else{
+            printf("ayo wtf\n");
+        }
             //process_poll(&datasender);         TODO
             break;
 
@@ -309,7 +315,6 @@ PROCESS_THREAD(sta_process, ev,data){
 
     PROCESS_BEGIN();
 
-    PROCESS_YIELD();
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
 
     uint8_t *buf = (uint8_t *)malloc(len_msg);
@@ -392,7 +397,10 @@ PROCESS_THREAD(associator_process, ev,data){
 
         etimer_set(&btimer, CLOCK_SECOND); //add some guard time, if not it will do the association during the beacons
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&btimer));
-        
+
+        time_until_poll = (T_MDB + ((NODEID-1) * (T_SLOT + T_GUARD)) - 1.5*CLOCK_SECOND);
+        printf("radio off, time until radio on: %lu ticks, %lu seconds\n", time_until_poll ,time_until_poll/CLOCK_SECOND);
+        etimer_set(&radiotimer, time_until_poll);
         
         while(!is_associated)
             {
@@ -436,19 +444,14 @@ PROCESS_THREAD(associator_process, ev,data){
         if(txflag) {
             printf("I'm transmitting in the %dth slot\n", (i_buf+1));
             
-            time_until_poll = T_MDB + ((NODEID-1) * (T_SLOT + T_GUARD)) - T_GUARD;
-            printf("radio off, time until radio on: %lu ticks, %lu seconds\n", time_until_poll ,time_until_poll/CLOCK_SECOND);              
+            //time_until_poll = T_MDB + ((NODEID-1) * (T_SLOT + T_GUARD)) - T_GUARD;
+            //printf("radio off, time until radio on: %lu ticks, %lu seconds\n", time_until_poll ,time_until_poll/CLOCK_SECOND);              
             NETSTACK_RADIO.off();
             RTIMER_BUSYWAIT(5);
-            etimer_set( &radiotimer, time_until_poll);
+            //etimer_set( &radiotimer, time_until_poll);
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&radiotimer));
             
             NETSTACK_RADIO.on();
-            
-            
-            //NETSTACK_MAC.on(); //test this
-            
-            //NETSTACK_RADIO.on();
             printf("radio back on\n");
             txflag = 0;
 
