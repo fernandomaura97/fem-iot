@@ -14,7 +14,7 @@
 
 
 #define LOG_MODULE "App"
-#define LOG_LEVEL LOG_LEVEL_INFO
+#define LOG_LEVEL LOG_LEVEL_DBG
 
 
 #define NODEID_MGAS1 1
@@ -43,6 +43,18 @@ static uint16_t cb_len;
 static linkaddr_t from; 
 
 #define DEBUG 0
+
+/* PRINTF for debug? otherwise use LOG_DBG with LOG_LEVEL_DBG and not LOG_LEVEL_INFO
+#if DEBUG
+
+#define PRINTF(...) printf(__VA_ARGS__)
+
+#else //
+
+#define PRINTF(...)
+
+#endif //
+*/
 
 #define ROUTENUMBER 8 //for now, then it should be bigger
 
@@ -81,15 +93,15 @@ AUTOSTART_PROCESSES(&coordinator_process, &parser_process, &association_process,
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {   
-    #if DEBUG
+   
     LOG_DBG("Callback received from ");
     LOG_DBG_LLADDR(src);
     LOG_DBG("\n");
-    #endif
+   
 
     from = *src;
     cb_len = len; //save the length of the received packet
-
+    
 
     process_poll(&callback_process);
 }
@@ -146,8 +158,9 @@ PROCESS_THREAD(coordinator_process, ev,data)
             beaconbuf[0] = i; 
             nullnet_buf = (uint8_t*)&beaconbuf;
             nullnet_len = sizeof(beaconbuf);
+            
             NETSTACK_NETWORK.output(NULL);
-            LOG_INFO("beacon %d sent, bitmask %d\n", i, beaconbuf[1]);
+            LOG_INFO("beacon %d sent, length %d, bitmask %d\n", i,sizeof(beaconbuf), beaconbuf[1]);
             
             if(i<2){
             etimer_set(&guard_timer, T_GUARD); //set the timer for the next interval
@@ -156,7 +169,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
         }
         
         etimer_set(&mm_timer, T_MM); //set the timer for the next interval
-
+        
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&mm_timer));
 
         t=clock_time();
@@ -382,16 +395,25 @@ PROCESS_THREAD( parser_process, ev, data)
 
 PROCESS_THREAD(association_process,ev,data){
 
-
+    uint8_t buf_assoc[2];
+    uint8_t id_rx; 
     PROCESS_BEGIN();
     
 
 
     while(1){
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+        
+        uint8_t assobuf[2];
+
 
         uint8_t i;
         uint8_t oldaddr = 0; 
+        packetbuf_copyto(assobuf);
+        printf("rx messg from nodeid: %d", assobuf[1]);
+        
+        id_rx = assobuf[1];
+
 
         for (i= 0; i<ROUTENUMBER; i++){
             //if (addr_stas[i] == *buffer_addr){
@@ -413,26 +435,40 @@ PROCESS_THREAD(association_process,ev,data){
                     printf("Address");
                     LOG_INFO_LLADDR(&buffer_addr);
                     printf(" added at pos %d\n", i);
+
+                    buf_assoc[0] = 0b01000000;
+                    buf_assoc[1] = id_rx;
+
+                    nullnet_buf = (uint8_t*)&buf_assoc;
+                    nullnet_len = sizeof(buf_assoc);
+
+                    NETSTACK_NETWORK.output(&buffer_addr);
                     break;
                     //oldaddr = 1;     
                     }
             }
         }
- }
+
+ }//while
     
     PROCESS_END();
 }
 
 PROCESS_THREAD(callback_process,ev,data){
 
+    uint8_t *buf;
+    uint8_t frame; 
     PROCESS_BEGIN();
-    PROCESS_YIELD();
+    //PROCESS_YIELD();
 
-    while(1) {
+    while(1) {      
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-        uint8_t *buf = (uint8_t *)malloc(cb_len);
+        //buf = (uint8_t *)malloc(cb_len);
         buf = packetbuf_dataptr();
-        
+        frame = (buf[0] & 224)>>5;
+
+       
+        /*
         switch ((buf[0] & 224) >> 5 ) { //check the first 3 bits of the first byte
 
             case 0:
@@ -460,15 +496,45 @@ PROCESS_THREAD(callback_process,ev,data){
 
             case 5: 
                 LOG_INFO("Energest Data received\n");
-                /*Are we going to use this really? Maybe checking the consumptions in the lab through serial monitor
-                should be enough for making a model, since the network is "deterministic" */
+                //Are we going to use this really? Maybe checking the consumptions in the lab through serial monitor
+                //should be enough for making a model, since the network is "deterministic" 
                 break;
 
             default:
                 LOG_INFO("Unknown packet received\n");
                 break;
         }
-    }
+        */
+        if (frame == 0){
+            LOG_DBG("Beacon received ??\n");
+        }
+        else if( frame ==1){
+            LOG_DBG("Association request received\n");
+            linkaddr_copy(&buffer_addr, &from );
+            process_poll(&association_process);     
+        }
+        else if( frame ==2){
+            LOG_DBG("Association response received ??\n");
+        }
+        else if( frame ==3){
+            LOG_DBG("Poll request received ?? \n");
+        }
+        else if( frame ==4){
+            LOG_DBG("Sensor Data received\n");
+            process_poll(&parser_process);
+        }
+        else if( frame ==5){
+            LOG_DBG("Energest Data received\n");
+        }
+        else{
+            LOG_DBG("Unknown packet received\n");
+        }
+        
+        //free(buf);
+    
+    printf("endloop\n");
+    } //while      
+
 
     PROCESS_END();
 }

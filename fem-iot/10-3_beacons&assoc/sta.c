@@ -11,9 +11,20 @@
 /* Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "App"
-#define LOG_LEVEL LOG_LEVEL_INFO
+#define LOG_LEVEL LOG_LEVEL_DBG
 
 #define DEBUG 1
+
+#if DEBUG
+
+#define PRINTF(...) printf(__VA_ARGS__)
+
+#else //
+
+#define PRINTF(...)
+
+#endif //
+
 /*
 #define f_BEACON 0x00
 #define f_POLL 0x01
@@ -41,7 +52,7 @@ static bool is_associated;
 
 static uint8_t bitmask;
 
-const uint8_t power_levels[3] = {0x46, 0x71, 0x7F}; // -11dB, 8dB, 14dB
+const uint8_t power_levels[3] = {0x46, 0x71, 0x7F}; // 0dB, 8dB, 14dB
 
 
 /*---------------------------------------------------------------------------*/
@@ -59,6 +70,27 @@ static struct mydatas {
     } mydata;
 
 static bool txflag = 0;
+
+uint8_t who_bitmask(uint8_t b) //prints which nodes the beacon is polling, and if it's own NODEID return position of poll
+{
+    uint8_t i2;         
+    uint8_t pos = 0;
+    
+    PRINTF("Beacon is asking for: ");
+    for (i2 = 0; i2 < 8; i2++) {
+        if (bitmask & (1 << i2)) { //for each bit in bitmask
+            PRINTF("%d \t", (i2+1));
+            if((i2+1) == NODEID)
+            {   
+                pos = i2;
+                
+            }
+        }   
+    }
+    PRINTF("\n");
+    return pos;
+}
+
 
 
 void datasender( uint8_t id )  
@@ -160,11 +192,6 @@ AUTOSTART_PROCESSES(&radio_process, &associator_process,&sta_process);
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {   
-  #if DEBUG
-  LOG_INFO("Callback received from ");
-  LOG_INFO_LLADDR(src);
-  LOG_INFO("\n");
-  #endif
   from = *src;
   len_msg = len;
   //uint8_t *buf = (uint8_t *)malloc(len);
@@ -172,9 +199,12 @@ void input_callback(const void *data, uint16_t len,
   
   process_poll(&radio_process);
 
+}
 
-  
-}//callback
+
+/*---------------------------------------------------------------------------*/
+
+
 PROCESS_THREAD(radio_process,ev,data)
 {   
 
@@ -185,28 +215,28 @@ PROCESS_THREAD(radio_process,ev,data)
 
     //PROCESS_YIELD();
     while(1)
-    {
-        
+    {        
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-
         //uint8_t *buf = (uint8_t *)malloc(len_msg);
         //packetbuf_dataptr(buf, data, len); //TEST THIS
 
         datapoint = packetbuf_dataptr();
-        
-        LOG_INFO("Parsing...\n");
-        uint8_t frame_header = (datapoint[0] & 224) >> 5;
-        //uint8_t frame_type = datapoint[0] & 31; //WHAT TO DO WITH THIS¿¿¿??
+        uint8_t frame_header = (datapoint[0] & 0b11100000) >> 5;  
 
 
         switch(frame_header ) {
 
         case 0:
             LOG_INFO("Beacon received\n");
-            
-            linkaddr_copy(&coordinator_addr, &from);
-            process_poll(&associator_process);
+            if(!txflag){
+                linkaddr_copy(&coordinator_addr, &from);
+                process_poll(&associator_process);
             break;
+            }
+            else{
+                LOG_INFO("ignoring beacon\n");
+                break;
+            }
 
         case 1:
             LOG_INFO("Association request received ??\n"); //not supposed to be hearing these
@@ -313,7 +343,8 @@ PROCESS_THREAD(sta_process, ev,data){
 PROCESS_THREAD(associator_process, ev,data){
     static struct etimer asotimer;
     
-    uint8_t i, i_buf; 
+    
+    static uint8_t i_buf; 
     static uint8_t ix;
     static uint8_t *buf;
     static uint8_t B_n;
@@ -325,57 +356,64 @@ PROCESS_THREAD(associator_process, ev,data){
 
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL); //wait until beacon 
 
-        buf = (uint8_t *)malloc(len_msg);
+        buf = (uint8_t *)malloc(2); //2 BYTE
         buf = packetbuf_dataptr();
         
         printf("buf[0], buf[1] buf[2] :%02x %02x %02x ", buf[0], buf[1], buf[2]);
         
         B_n = (buf[0] & 0b00011111);
         printf("B_n = %d\n", B_n);
+        //bitmask = buf[1];
 
 
-    
-        if(B_n==0){
+        if(B_n==0 && txflag == 0){ // if it's beacon 0
             etimer_set(&btimer, CLOCK_SECOND);
+            i_buf = who_bitmask(buf[1]);
+            txflag = 1;
+            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&btimer));
             }
-        else if(B_n==1){
+        else if(B_n==1 && txflag == 0){ // if it's beacon 1
             etimer_set(&btimer, CLOCK_SECOND*0.5);
+            i_buf = who_bitmask(buf[1]);
+            txflag = 1; 
+            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&btimer));
             }
-
-        bitmask = buf[1];
-        printf("beacon is asking for ");
+        else if(B_n==2 && txflag == 0){ // if it's beacon 2
+            txflag = 1;
+            i_buf = who_bitmask(buf[1]);
+           
+        }            
         
-        if(txflag == 0){
-            for (i = 0; i < 8; i++) {
-                if (bitmask & (1 << i)) {
-                    printf("%d \t", (i+1));
-                    if((i+1) == NODEID)
-                    {   
-                        i_buf = i;
-                        txflag = 1;
-                    }
-                }          
-              
-            }
-        printf("\n");
-        }
+        clock_time_t bufvar = 357*CLOCK_SECOND;
+        printf("setting timer for %lu ticks, %lu seconds (+3) until beacon\n", bufvar, (bufvar/CLOCK_SECOND));
+
+        etimer_set(&next_beacon_etimer, (357*CLOCK_SECOND)); //use rtimer maybe?
+        
+
+        etimer_set(&btimer, CLOCK_SECOND); //add some guard time, if not it will do the association during the beacons
+        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&btimer));
+        
+        
         while(!is_associated)
             {
             //augment TX POWER and send again. If no response, "poison"
+            etimer_set(&asotimer, 5* CLOCK_SECOND);
+
             NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, power_levels[ix]);
+            
             printf("tx power: %02x\n", power_levels[ix]);
 
             /*---------------------------------------------------------------------------*/
             //WHAT TO SEND IN HERE? association request: 0x0
 
-          
             buf[0] = 0b00100000; //association request
+            buf[1] = NODEID; 
             //buf[0] |= ???;
             /*---------------------------------------------------------------------------*/
             nullnet_buf = (uint8_t *)buf;
             nullnet_len = sizeof(*buf);
             NETSTACK_NETWORK.output(&coordinator_addr);
-
+            
             ix++;
             if(ix >= 3)
             {
@@ -385,18 +423,13 @@ PROCESS_THREAD(associator_process, ev,data){
                 break; 
             }
 
-            etimer_set(&asotimer, 5* CLOCK_SECOND);
+            
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&asotimer));
    
             } //while
     
-            if(B_n != 2){
-                PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&btimer));
-                }
-        clock_time_t bufvar = 357*CLOCK_SECOND;
-        printf("setting timer for %lu ticks, %lu seconds (+3) until beacon\n", bufvar, (bufvar/CLOCK_SECOND));
-
-        etimer_set(&next_beacon_etimer, (357*CLOCK_SECOND)); //use rtimer maybe?
+            
+       
 
         //uint8_t *buf = (uint8_t *)malloc(len_msg);
 
