@@ -51,6 +51,7 @@ static uint16_t len_msg;
 static bool is_associated;
 
 static uint8_t bitmask;
+static bool amipolled;
 
 const uint8_t power_levels[3] = {0x46, 0x71, 0x7F}; // 0dB, 8dB, 14dB
 
@@ -75,6 +76,7 @@ uint8_t who_bitmask(uint8_t b) //prints which nodes the beacon is polling, and i
 {
     uint8_t i2;         
     uint8_t pos = 0;
+    amipolled = 0; //reset amipolled flag
     
     PRINTF("Beacon is asking for: ");
     for (i2 = 0; i2 < 8; i2++) {
@@ -82,7 +84,8 @@ uint8_t who_bitmask(uint8_t b) //prints which nodes the beacon is polling, and i
             PRINTF("%d \t", (i2+1));
             if((i2+1) == NODEID)
             {   
-                pos = i2;
+                pos = i2+1;
+                amipolled = 1;
                 
             }
         }   
@@ -187,9 +190,14 @@ uint8_t datasender( uint8_t id )
         printf("Sending %d %d %d %d %d %d %d %d %d\n", megabuf[0], megabuf[1], megabuf[2], megabuf[3], megabuf[4], megabuf[5], megabuf[6], megabuf[7], megabuf[8]);
 
         //make sure it's correct data
+        
         nullnet_buf = (uint8_t *)&megabuf;
+       
         nullnet_len = sizeof(megabuf);
+
+       
         NETSTACK_NETWORK.output(NULL); 
+      
         return 1;
     }
     else if(id == 2 || id == 4){
@@ -385,7 +393,7 @@ PROCESS_THREAD(sta_process, ev,data){
 
     
     buffer_poll = packetbuf_dataptr();
-       
+    
 
     printf("POLL frame!\n");
     printf("received poll for %d, I am node %d\n", buffer_poll[1], NODEID);
@@ -393,11 +401,14 @@ PROCESS_THREAD(sta_process, ev,data){
         {
             //printf("I'm transmitting in the %dth slot\n", buf[1]);
             datasender(buffer_poll[1]);
+            printf("finished sending\n");
             NETSTACK_RADIO.off();
             RTIMER_BUSYWAIT(5);
+            printf("still here\n");
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&next_beacon_etimer));
             NETSTACK_RADIO.on();
             printf("radio back on, beacon in ~2s \n");
+            
         }
         else
         {
@@ -444,19 +455,19 @@ PROCESS_THREAD(associator_process, ev,data){
         if(B_n==0 && txflag == 0){ // if it's beacon 0
             etimer_set(&btimer, CLOCK_SECOND);
             i_buf = who_bitmask(buf[1]);
-            txflag = 1;
+            txflag = 1;            
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&btimer));
             }
         else if(B_n==1 && txflag == 0){ // if it's beacon 1
             etimer_set(&btimer, CLOCK_SECOND*0.5);
             i_buf = who_bitmask(buf[1]);
-            txflag = 1; 
+            txflag = 1;
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&btimer));
             }
         else if(B_n==2 && txflag == 0){ // if it's beacon 2
-            txflag = 1;
+            
             i_buf = who_bitmask(buf[1]);
-           
+            txflag = 1;
         }            
         
         clock_time_t bufvar = 357*CLOCK_SECOND;
@@ -511,7 +522,7 @@ PROCESS_THREAD(associator_process, ev,data){
 
         //uint8_t *buf = (uint8_t *)malloc(len_msg);
 
-        if(txflag) {
+        if( amipolled ==true  ) {
             printf("I'm transmitting in the %dth slot\n", (i_buf+1));
             
             //time_until_poll = T_MDB + ((NODEID-1) * (T_SLOT + T_GUARD)) - T_GUARD;
@@ -526,7 +537,7 @@ PROCESS_THREAD(associator_process, ev,data){
             txflag = 0;
 
         }
-        else{
+        else if (amipolled ==0) { //if not polled, just wait for the next beacon
             printf("Radio off until the next beacon\n");
             NETSTACK_RADIO.off();
             RTIMER_BUSYWAIT(5);
