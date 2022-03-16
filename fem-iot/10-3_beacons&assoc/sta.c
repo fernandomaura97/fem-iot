@@ -93,7 +93,7 @@ uint8_t who_bitmask(uint8_t b) //prints which nodes the beacon is polling, and i
 
 
 
-void datasender( uint8_t id )  
+uint8_t datasender( uint8_t id )  
 {
     uint8_t megabuf[9];
     mydata.co = 1.23;
@@ -105,8 +105,10 @@ void datasender( uint8_t id )
     mydata.temperature = 670;
 
     nullnet_buf = (uint8_t *)&megabuf;
-    nullnet_len = sizeof(megabuf);        
-    switch(id) {
+    nullnet_len = sizeof(megabuf);   
+         
+    /*switch(id) {
+        
         case 1:
         case 3:
             printf("Node %d, multigas\n", id);
@@ -121,8 +123,6 @@ void datasender( uint8_t id )
             nullnet_buf = (uint8_t *)&megabuf;
             nullnet_len = sizeof(megabuf);
             NETSTACK_NETWORK.output(NULL); 
-            
-
             break;
         case 2:
         case 4: 
@@ -176,10 +176,75 @@ void datasender( uint8_t id )
             printf("?");
           
             break;
+    }*/
+    if(id == 1 || id ==3){
+        printf("Node %d, multigas\n", id);
+
+        //megabuf[0] = id;
+        megabuf[0] = 0b10000000 | id;
+        memcpy(&megabuf[1], &mydata.co, sizeof(mydata.co));
+        memcpy(&megabuf[5], &mydata.no2, sizeof(mydata.no2));
+        printf("Sending %d %d %d %d %d %d %d %d %d\n", megabuf[0], megabuf[1], megabuf[2], megabuf[3], megabuf[4], megabuf[5], megabuf[6], megabuf[7], megabuf[8]);
+
+        //make sure it's correct data
+        nullnet_buf = (uint8_t *)&megabuf;
+        nullnet_len = sizeof(megabuf);
+        NETSTACK_NETWORK.output(NULL); 
+        return 1;
     }
+    else if(id == 2 || id == 4){
+        printf("Node %d, dht22\n", id);
+
+        megabuf[0] = id;
+        memcpy(&megabuf[1], &mydata.temperature, sizeof(mydata.temperature));
+        memcpy(&megabuf[3], &mydata.hum, sizeof(mydata.hum));
+        memcpy(&megabuf[5], &mydata.noise, sizeof(mydata.noise));
+
+        nullnet_buf = (uint8_t *)&megabuf;
+        nullnet_len = sizeof(megabuf);
+        NETSTACK_NETWORK.output(NULL); 
+        return 1;
+
+    }
+    else if(id == 5 || id == 6){
+        printf("Node %d, Ozone\n", id);
+        union {
+            float float_variable;
+            uint8_t temp_array[4];
+        } u;
+
+        u.float_variable = mydata.o3;
+
+        megabuf[5] = u.temp_array[0];
+        megabuf[6] = u.temp_array[1];
+        megabuf[7] = u.temp_array[2];
+        megabuf[8] = u.temp_array[3];
+        megabuf[0] = id;
+
+        memcpy(&megabuf[1], &mydata.temperature, sizeof(mydata.temperature));
+        memcpy(&megabuf[3], &mydata.hum, sizeof(mydata.hum));
+
+        nullnet_buf = (uint8_t *)&megabuf;
+        nullnet_len = sizeof(megabuf);
+        NETSTACK_NETWORK.output(NULL); 
+    }
+    else if(id == 7 || id == 8){
+        printf("Node %d, PM10\n", id);
+
+        megabuf[0] = id;
+        memcpy(&megabuf[1], &mydata.pm10, sizeof(mydata.pm10));
+
+        nullnet_buf = (uint8_t *)&megabuf;
+        nullnet_len = sizeof(megabuf);
+        NETSTACK_NETWORK.output(NULL); 
+    }
+    else{
+        printf("?");
+    }
+    printf("finishhhhhh");
+    return 1;
+
 }
-
-
 
 /*---------------------------------------------------------------------------*/
 
@@ -312,21 +377,22 @@ PROCESS_THREAD(sta_process, ev,data){
     mydata.hum = 560;
     mydata.temperature = 670;
     */
+   static uint8_t *buffer_poll;
 
     PROCESS_BEGIN();
 
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
 
-    uint8_t *buf = (uint8_t *)malloc(len_msg);
-    buf = packetbuf_dataptr();
+    
+    buffer_poll = packetbuf_dataptr();
        
 
     printf("POLL frame!\n");
-    printf("received poll for %d, I am node %d\n", buf[1], NODEID);
-    if(buf[1] == NODEID)
+    printf("received poll for %d, I am node %d\n", buffer_poll[1], NODEID);
+    if(buffer_poll[1] == NODEID)
         {
             //printf("I'm transmitting in the %dth slot\n", buf[1]);
-            datasender(buf[1]);
+            datasender(buffer_poll[1]);
             NETSTACK_RADIO.off();
             RTIMER_BUSYWAIT(5);
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&next_beacon_etimer));
@@ -335,7 +401,11 @@ PROCESS_THREAD(sta_process, ev,data){
         }
         else
         {
-            printf("Error: I'm awake in the %d slot and I am %d \n", buf[1], NODEID);
+            printf("Error: I'm awake in the %d slot and I am %d \n", buffer_poll[1], NODEID);
+            NETSTACK_RADIO.off();
+            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&next_beacon_etimer));
+            NETSTACK_RADIO.on();
+            printf("radio back on, beacon in ~2s \n");
         }
 
 
