@@ -23,7 +23,16 @@
 
 #define PRINTF(...)
 
-#endif //
+#endif //int ispolled(uint8_t bitmask, uint8_t id){
+    
+    uint8_t masked = bitmask & id;
+    if (masked & id){
+        return 1;
+    }
+    else{
+        return 0; 
+    }
+    
 
 /*
 #define f_BEACON 0x00
@@ -33,27 +42,46 @@
 */
 
 
-#define NODEID  1
+#define NODEID1 1
+#define NODEID2 2
+#define NODEID3 4
+#define NODEID4 8
+#define NODEID5 16
+#define NODEID6 32
+#define NODEID7 64
+#define NODEID8 128
+
+#define NODEID NODEID1 
+
 
 #define T_MDB  (10 * CLOCK_SECOND)
 #define T_SLOT  (1.5 * CLOCK_SECOND)
 #define T_GUARD  (0.5 * CLOCK_SECOND)
 #define T_BEACON (360 * CLOCK_SECOND)
 
-
 static linkaddr_t from;
 static linkaddr_t coordinator_addr = {{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }};
+
+//TIMERS 
 static clock_time_t time_until_poll;
 static struct etimer radiotimer;
 static struct etimer next_beacon_etimer;
 static struct etimer btimer;    
-static uint16_t len_msg;
-static bool is_associated;
 
+
+/*---------------------------------------------------------------------------*/
+//FLAGS
+static volatile bool is_associated;
+
+static volatile bool amipolled_f; //set to 1 if the NODEID is the one polled
+static volatile bool beaconrx_f; //set to 1 if a beacon(out of 3) has been received on this cycle
+
+//VARIABLES
+static uint16_t len_msg;
 static uint8_t bitmask;
-static volatile bool amipolled;
 static volatile uint8_t i_buf;
 
+//CONSTANTS
 const uint8_t power_levels[3] = {0x46, 0x71, 0x7F}; // 0dB, 8dB, 14dB
 
 
@@ -71,31 +99,31 @@ static struct mydatas {
 
     } mydata;
 
-static bool txflag = 0;
 
-uint8_t who_bitmask(uint8_t b) //prints which nodes the beacon is polling, and if it's own NODEID return position of poll
+
+uint8_t am_i_polled(uint8_t bitmask, uint8_t id)  //prints which nodes the beacon is polling, and if it's own NODEID return position of poll
 {
-    uint8_t i2;         
-    uint8_t pos = 0;
-    amipolled = 0; //reset amipolled flag
-    
-    printf("Beacon is asking for: ");
-    for (i2 = 0; i2 < 8; i2++) {
-        if (bitmask & (1 << i2)) { //for each bit in bitmask
-            printf("%d \t", (i2+1));
-            if((i2+1) == NODEID)
-            {   
-                pos = i2+1;
-                amipolled = 1;
-            }
-        }   
+    uint8_t masked = bitmask & id;
+    if (masked & id){
+        return 1;
     }
-    printf("\n");
-    return pos;
+    else{
+        return 0; 
+    }         
 }
-
-
-
+//function to print the number of the NODEID (f.e. NODEID8 would return 8)
+uint8_t get_nodeid(uint8_t id)
+{
+    uint8_t i;
+    for (i = 0; i < 8; i++)
+    {
+        if (id & (1 << i))
+        {
+            return (i+1);
+        }
+    }
+    return 0;
+}
 uint8_t datasender( uint8_t id )  
 {
     uint8_t megabuf[9];
@@ -266,7 +294,7 @@ AUTOSTART_PROCESSES(&rx_process, &associator_process);
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {   
-  
+  linkaddr_cpy(&from, src);
   len_msg = len;
   //uint8_t *buf = (uint8_t *)malloc(len);
   //packetbuf_dataptr(buf, data, len); //TEST THIS
@@ -282,7 +310,7 @@ void input_callback(const void *data, uint16_t len,
 PROCESS_THREAD(rx_process,ev,data)
 {   
 
-    static uint8_t* datapoint;
+    static uint8_t* datapoint; //pointer to the packetbuf
     
     PROCESS_BEGIN();
     nullnet_set_input_callback(input_callback);
@@ -290,28 +318,45 @@ PROCESS_THREAD(rx_process,ev,data)
     //PROCESS_YIELD();
     while(1)
     {        
-        PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-        //uint8_t *buf = (uint8_t *)malloc(len_msg);
-        //packetbuf_dataptr(buf, data, len); //TEST THIS
+    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+    datapoint = packetbuf_dataptr();
+    uint8_t frame_header = (datapoint[0] & 0b11100000) >> 5;
 
-        datapoint = packetbuf_dataptr();
-        uint8_t frame_header = (datapoint[0] & 0b11100000) >> 5;  
-
-
-        switch(frame_header ) {
+    switch(frame_header ) {
 
         case 0:
             LOG_INFO("Beacon received\n");
-            if(!txflag){
-                linkaddr_copy(&coordinator_addr, &from);
+            if(!beaconrx_f){
+
+                etimer_set()
+                linkaddr_copy(&coordinator_addr, &from); //store coordinator address
+                uint8_t Beacon_no = datapoint[0] & 0b00011111;
+
+                if(Beacon_no == 0)
+                {
+                    beaconrx_f = 1;
+                    etimer_set(&b_timer, CLOCK_SECOND);
+                    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&b_timer));
+
+                }
+                else if(Beacon_no == 1)
+                {   
+                    beaconrx_f = 1;
+                    etimer_set(&b_timer, CLOCK_SECOND/2);
+                    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&b_timer));
+
+                }
+                else if(Beacon_no ==2)
+                {
+                    beaconrx_f = 1; //no need to wait
+                }
                 process_poll(&associator_process);
-            break;
+                //we have address in &coordinator_addr, 
             }
             else{
                 LOG_INFO("ignoring beacon\n");
                 break;
             }
-
         case 1:
             LOG_INFO("Association request received ??\n"); //not supposed to be hearing these
             break;
@@ -432,13 +477,6 @@ PROCESS_THREAD(poll_process, ev,data){
 }
 
 PROCESS_THREAD(associator_process, ev,data){
-    static struct etimer asotimer;
-    
-    
-     
-    static uint8_t ix;
-    static uint8_t *buf;
-    static uint8_t B_n;
     PROCESS_BEGIN();
 
     
@@ -446,37 +484,8 @@ PROCESS_THREAD(associator_process, ev,data){
     while(1){
 
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL); //wait until beacon 
-
-        buf = (uint8_t *)malloc(2); //2 BYTE
-        buf = packetbuf_dataptr();
         
-        printf("buf[0], buf[1] buf[2] :%02x %02x %02x ", buf[0], buf[1], buf[2]);
-        
-        B_n = (buf[0] & 0b00011111);
-        printf("B_n = %d\n", B_n);
-        //bitmask = buf[1];
-
-
-        if(B_n==0 && txflag == 0){ // if it's beacon 0
-            etimer_set(&btimer, CLOCK_SECOND);
-            i_buf = who_bitmask(buf[1]);
-            txflag = 1;            
-            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&btimer));
-            }
-        else if(B_n==1 && txflag == 0){ // if it's beacon 1
-            etimer_set(&btimer, CLOCK_SECOND*0.5);
-            i_buf = who_bitmask(buf[1]);
-            txflag = 1;
-            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&btimer));
-            }
-        else if(B_n==2 && txflag == 0){ // if it's beacon 2
-            
-            i_buf = who_bitmask(buf[1]);
-            txflag = 1;
-        }            
-        printf("I_buf == %d\n", i_buf);
-        clock_time_t bufvar = 357*CLOCK_SECOND;
-        printf("setting timer for %lu ticks, %lu seconds (+3) until beacon\n", bufvar, (bufvar/CLOCK_SECOND));
+        printf("setting timer for %lu ticks, %lu seconds (+3) until beacon\n", 357*CLOCK_SECOND, 357);
 
         etimer_set(&next_beacon_etimer, (357*CLOCK_SECOND)); //use rtimer maybe?
         
