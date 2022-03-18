@@ -43,7 +43,7 @@
 #define NODEID7 64
 #define NODEID8 128
 
-#define NODEID NODEID1 
+#define NODEID NODEID3
 
 
 #define T_MDB  (10 * CLOCK_SECOND)
@@ -56,6 +56,8 @@ static linkaddr_t coordinator_addr = {{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
 //TIMERS 
 static clock_time_t time_until_poll;
+static clock_time_t time_of_beacon_rx;
+
 static struct etimer radiotimer;
 static struct etimer next_beacon_etimer;
 static struct etimer b_timer; 
@@ -72,6 +74,7 @@ volatile static uint16_t len_msg;
 volatile static uint8_t bitmask;
 static volatile uint8_t i_buf;
 static uint8_t *buffer_poll;
+static uint8_t nodeid;
 
 //CONSTANTS
 const uint8_t power_levels[3] = {0x46, 0x71, 0x7F}; // 0dB, 8dB, 14dB
@@ -297,7 +300,9 @@ void input_callback(const void *data, uint16_t len,
 
 void input_callback2(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
-{   
+{  
+
+  printf("HELLO CALLBACK 2 \n");
   linkaddr_copy(&from, src);
   len_msg = len;
   //uint8_t *buf = (uint8_t *)malloc(len);
@@ -313,16 +318,18 @@ void input_callback2(const void *data, uint16_t len,
 PROCESS_THREAD(rx_process,ev,data)
 {   
 
-    static uint8_t* datapoint; //pointer to the packetbuf
-    
+    volatile static uint8_t* datapoint; //pointer to the packetbuf
+    //static uint8_t buf[10];
     PROCESS_BEGIN();
     nullnet_set_input_callback(input_callback2);
+    nodeid = get_nodeid(NODEID);
 
     //PROCESS_YIELD();
     while(1)
     {        
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
     datapoint = packetbuf_dataptr();
+    //buf[]
 
     uint8_t frame_header = (datapoint[0] & 0b11100000) >> 5;
     bitmask = datapoint[1];
@@ -405,7 +412,6 @@ PROCESS_THREAD(rx_process,ev,data)
         else{
             LOG_INFO("Unknown packet received\n");
         } //switch
-        free(datapoint);
     } //while
     PROCESS_END();
     
@@ -434,57 +440,72 @@ PROCESS_THREAD(poll_process, ev,data){
     mydata.hum = 560;
     mydata.temperature = 670;
     */
-    
+    static clock_time_t time_after_poll;
 
     PROCESS_BEGIN();
-    
-    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-    //process_exit(&rx_process);
-    //process_exit(&associator_process);
-    
-    buffer_poll = packetbuf_dataptr();
-    
+    while(1)
+    {
+        PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+        //process_exit(&rx_process);
+        //process_exit(&associator_process);
+        
+        buffer_poll = packetbuf_dataptr();
+        
 
-    printf("POLL frame!\n");
-    printf("received poll for %d, I am node %d\n", buffer_poll[1], NODEID);
-    if(buffer_poll[1] == NODEID)
-        {
-            //printf("I'm transmitting in the %dth slot\n", buf[1]);
-            datasender(buffer_poll[1]);
+        printf("POLL frame!\n");
+        printf("received poll for %d, I am node %d\n", buffer_poll[1], nodeid);
 
 
-            //maybe try instead of function, to do the switch case here
+
+        if(buffer_poll[1] == nodeid)
+            {
+                //printf("I'm transmitting in the %dth slot\n", buf[1]);
+                datasender(buffer_poll[1]);
 
 
-            printf("finished sending\n");
-            NETSTACK_RADIO.off();
-            RTIMER_BUSYWAIT(5);
-            printf("still here\n");
+                //maybe try instead of function, to do the switch case here
 
-            PROCESS_WAIT_UNTIL(etimer_expired(&next_beacon_etimer));
-            NETSTACK_RADIO.on();
-            printf("radio back on, beacon in ~2s \n");
 
+                printf("finished sending\n");
+                NETSTACK_RADIO.off();
+                RTIMER_BUSYWAIT(5);
+                time_after_poll = clock_time() - time_of_beacon_rx;
+                printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu", 350 - time_after_poll/CLOCK_SECOND, clock_time()/CLOCK_SECOND, time_of_beacon_rx/CLOCK_SECOND, time_after_poll/CLOCK_SECOND);
+                etimer_set(&next_beacon_etimer, 357*CLOCK_SECOND - time_after_poll);
+                printf("still here\n");
+    /*--------------------------------------------------------------------------------------------------------------------*/
             
-        }
-        else
-        {
-            printf("Error: I'm awake in the %d slot and I am %d \n", buffer_poll[1], NODEID);
-            NETSTACK_RADIO.off();
-            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&next_beacon_etimer));
-            NETSTACK_RADIO.on();
-            printf("radio back on, beacon in ~2s \n");
-        }
+                
+
+                
+                //printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu", 350*CLOCK_SECOND - time_after_poll, clock_time(), time_of_beacon_rx, time_after_poll);
+                //etimer_set(&next_beacon_etimer, CLOCK_SECOND * 2);
+
+    /*--------------------------------------------------------------------------------------------------------------------*/
+
+                PROCESS_WAIT_UNTIL(etimer_expired(&next_beacon_etimer));
+                NETSTACK_RADIO.on();
+                printf("radio back on, beacon in ~2s \n");
+                beaconrx_f = 0;
+
+                
+            }
+            else
+            {
+                printf("Error: I'm awake in the %d slot and I am %d \n", buffer_poll[1], nodeid);
+                NETSTACK_RADIO.off();
+                PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&next_beacon_etimer));
+                NETSTACK_RADIO.on();
+                printf("radio back on, beacon in ~2s \n");
+            }
 
   
+    }
     PROCESS_END();
-
-
-
 }
 
 PROCESS_THREAD(associator_process, ev,data){
-    static uint8_t nodeid_no;
+    //static uint8_t nodeid_no;
     static uint8_t buf[2];
     PROCESS_BEGIN();
 
@@ -493,13 +514,13 @@ PROCESS_THREAD(associator_process, ev,data){
     while(1){
 
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL); //wait until beacon 
-        clock_time_t timebuf = 357*CLOCK_SECOND;
-        printf("setting timer for %lu ticks, %lu seconds (+3) until beacon\n", timebuf, timebuf/CLOCK_SECOND);
+        //clock_time_t timebuf = 357*CLOCK_SECOND;
+        //printf("setting timer for %lu ticks, %lu seconds (+3) until beacon\n", timebuf, timebuf/CLOCK_SECOND);
+        time_of_beacon_rx = clock_time();
+        //etimer_set(&next_beacon_etimer, (357*CLOCK_SECOND)); //use rtimer maybe?
+       
 
-        etimer_set(&next_beacon_etimer, (357*CLOCK_SECOND)); //use rtimer maybe?
-        nodeid_no = get_nodeid(NODEID);
-
-        time_until_poll = (T_MDB + ((nodeid_no - 1) * (T_SLOT + T_GUARD))) - T_GUARD;
+        time_until_poll = (T_MDB + ((nodeid - 1) * (T_SLOT + T_GUARD))) - T_GUARD;
         printf("time until poll is %lu\n", time_until_poll/CLOCK_SECOND);
         //printf("radio off, time until radio on: %lu ticks, %lu seconds\n", time_until_poll ,time_until_poll/CLOCK_SECOND);
         etimer_set(&radiotimer, time_until_poll);
@@ -537,12 +558,14 @@ PROCESS_THREAD(associator_process, ev,data){
         else //if is associated
         {
             printf("I'm already associated\n");
+            printf("bitmask: %02x, nodeid: %d\n", bitmask, nodeid);
+            
         }
         
-        amipolled_f = am_i_polled(bitmask, nodeid_no);
+        amipolled_f = am_i_polled(bitmask, nodeid);
 
         if( amipolled_f == 1){
-            printf("I'm transmitting in the %dth slot\n", nodeid_no);
+            printf("I'm transmitting in the %dth slot\n", nodeid);
             
             //time_until_poll = T_MDB + ((NODEID-1) * (T_SLOT + T_GUARD)) - T_GUARD;
             //printf("radio off, time until radio on: %lu ticks, %lu seconds\n", time_until_poll ,time_until_poll/CLOCK_SECOND);              

@@ -40,17 +40,19 @@
 #define T_GUARD  (0.5 * CLOCK_SECOND)
 #define T_BEACON (360 * CLOCK_SECOND)
 
+//STATIC STRUCT FOR FLAGS?
+
 
 static linkaddr_t from;
 static linkaddr_t coordinator_addr = {{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }};
 static clock_time_t time_until_poll;
 static struct etimer radiotimer;
 static struct etimer next_beacon_etimer;
-static struct rtimer next_beacon_rtimer;
+//static struct rtimer next_beacon_rtimer;
 static struct etimer btimer;    
 static clock_time_t time_of_beacon_rx;
 static uint16_t len_msg;
-static bool is_associated;
+volatile static bool is_associated;
 
 static uint8_t bitmask;
 static volatile bool amipolled;
@@ -276,15 +278,16 @@ void input_callback(const void *data, uint16_t len,
   process_poll(&rx_process);
 
 }
-
+/*
 void
 next_beacon_rtimer_callback(struct rtimer *timer, void *ptr)
 {
     printf("radio back on from rtimer");
     NETSTACK_RADIO.on();
 
-  /* Normally avoid printing from rtimer - rather do a process poll */
+  // Normally avoid printing from rtimer - rather do a process poll 
 }
+*/
 
 
 /*---------------------------------------------------------------------------*/
@@ -332,8 +335,9 @@ PROCESS_THREAD(rx_process,ev,data)
         
             //if(from == coordinator_addr) {
             if(linkaddr_cmp(&from, &coordinator_addr)) { 
+                is_associated = 1; 
                 LOG_INFO("Not associated, associating now\n");
-                is_associated = true; 
+                
                 
                 
             }
@@ -423,10 +427,10 @@ PROCESS_THREAD(poll_process, ev,data){
             NETSTACK_RADIO.off();
             printf("still here\n");
             time_after_poll = clock_time() - time_of_beacon_rx;
-            etimer_set(&next_beacon_etimer, 357*CLOCK_SECOND - time_after_poll/CLOCK_SECOND);
+            etimer_set(&next_beacon_etimer, 350*CLOCK_SECOND - time_after_poll/CLOCK_SECOND);
 
             
-            printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu", 357*CLOCK_SECOND - time_after_poll, clock_time(), time_of_beacon_rx, time_after_poll);
+            printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu", 350*CLOCK_SECOND - time_after_poll, clock_time(), time_of_beacon_rx, time_after_poll);
             //etimer_set(&next_beacon_etimer, CLOCK_SECOND * 2);
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&next_beacon_etimer));
             NETSTACK_RADIO.on();
@@ -451,7 +455,7 @@ PROCESS_THREAD(poll_process, ev,data){
 
 PROCESS_THREAD(associator_process, ev,data){
     static struct etimer asotimer;
-    
+    //static struct rtimer next_beacon_rtimer;
     
      
     static uint8_t ix;
@@ -496,15 +500,15 @@ PROCESS_THREAD(associator_process, ev,data){
         clock_time_t bufvar = 357*CLOCK_SECOND;
         printf("setting timer for %lu ticks, %lu seconds (+3) until beacon\n", bufvar, (bufvar/CLOCK_SECOND));
         
-       
+        //rtimer_set(&next_beacon_rtimer, RTIMER_NOW() + 357*RTIMER_SECOND , 0, &next_beacon_rtimer_callback, NULL); //we can pass an argument here, but we don't need it
+
         /*---------------------------------------------------------------------------*/                                                                         //TESTS
         PROCESS_CONTEXT_BEGIN(&poll_process);
         //etimer_set(&next_beacon_etimer, (357*CLOCK_SECOND)); //use rtimer maybe?
         time_of_beacon_rx = clock_time();
         
 
-        rtimer_set(&next_beacon_rtimer, RTIMER_NOW() + 357*RTIMER_SECOND , 0, &next_beacon_rtimer_callback, NULL); //we can pass an argument here, but we don't need it
-
+        
       
         //etimer_set(&next_beacon_etimer, (357*CLOCK_SECOND)); //use rtimer maybe?
         PROCESS_CONTEXT_END(&poll_process);
@@ -568,7 +572,7 @@ PROCESS_THREAD(associator_process, ev,data){
 
         }
         else if (amipolled == 0) { //if not polled, just wait for the next beacon
-            printf("Radio off until the next beacon\n");
+            printf("Radio off until the next beacon  11\n");
             NETSTACK_RADIO.off();
             RTIMER_BUSYWAIT(5);
             etimer_set( &radiotimer, T_BEACON - 2*CLOCK_SECOND);           //PROBABLY THIS IS WRONG!!! FIX FIX FIX

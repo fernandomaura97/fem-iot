@@ -150,7 +150,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
         etimer_set(&beacon_timer, BEACON_INTERVAL); //set the timer for the next interval
         
         static uint8_t i;
-
+        bitmask = 0xFF;
         for (i= 0; i<3; i++)
         {
             beaconbuf[1] = bitmask; 
