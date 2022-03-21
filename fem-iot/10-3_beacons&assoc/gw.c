@@ -76,6 +76,7 @@ const linkaddr_t addr_empty = {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}
 
 
 //static uint8_t *buf;
+uint8_t global_buffer[20];
 
 /*---------------------------------------------------------------------------*/
 
@@ -93,14 +94,10 @@ AUTOSTART_PROCESSES(&coordinator_process, &parser_process, &association_process,
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {   
-   
-    LOG_DBG("Callback received from ");
-    LOG_DBG_LLADDR(src);
-    LOG_DBG("\n");
-   
 
     from = *src;
     cb_len = len; //save the length of the received packet
+    packetbuf_copyto(&global_buffer); //copy the received packet to the buffer
     
 
     process_poll(&callback_process);
@@ -392,23 +389,18 @@ PROCESS_THREAD( parser_process, ev, data)
 PROCESS_THREAD(association_process,ev,data){
 
     uint8_t buf_assoc[2];
-    uint8_t id_rx; 
+    static uint8_t id_rx;
+    uint8_t i;
+    uint8_t oldaddr = 0; 
+    
     PROCESS_BEGIN();
     
-
-
     while(1){
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-        
-        uint8_t assobuf[2];
 
-
-        uint8_t i;
-        uint8_t oldaddr = 0; 
-        packetbuf_copyto(assobuf);
-        printf("rx messg from nodeid: %d", assobuf[1]);
+        LOG_DBG("rx messg from nodeid: %d\n", global_buffer[1]);
         
-        id_rx = assobuf[1];
+        id_rx = global_buffer[1];
 
 
         for (i= 0; i<ROUTENUMBER; i++){
@@ -428,7 +420,7 @@ PROCESS_THREAD(association_process,ev,data){
                 if(linkaddr_cmp(&addr_stas[i], &addr_empty))
                     {
                     linkaddr_copy(&addr_stas[i], &buffer_addr); //if we don't have it, add it
-                    printf("Address");
+                    printf("Address ");
                     LOG_INFO_LLADDR(&buffer_addr);
                     printf(" added at pos %d\n", i);
 
@@ -439,6 +431,7 @@ PROCESS_THREAD(association_process,ev,data){
                     nullnet_len = sizeof(buf_assoc);
 
                     NETSTACK_NETWORK.output(&buffer_addr);
+                    printf("Association message sent to node %d\n", id_rx);
                     break;
                     //oldaddr = 1;     
                     }

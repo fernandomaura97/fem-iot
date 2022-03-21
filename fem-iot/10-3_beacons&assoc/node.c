@@ -226,7 +226,7 @@ uint8_t datasender( uint8_t id )
     else if(id == 2 || id == 4){
         printf("Node %d, dht22\n", id);
 
-        megabuf[0] = id;
+        megabuf[0] = 0b10000000 | id;
         memcpy(&megabuf[1], &mydata.temperature, sizeof(mydata.temperature));
         memcpy(&megabuf[3], &mydata.hum, sizeof(mydata.hum));
         memcpy(&megabuf[5], &mydata.noise, sizeof(mydata.noise));
@@ -250,7 +250,7 @@ uint8_t datasender( uint8_t id )
         megabuf[6] = u.temp_array[1];
         megabuf[7] = u.temp_array[2];
         megabuf[8] = u.temp_array[3];
-        megabuf[0] = id;
+        megabuf[0] = 0b10000000 | id;
 
         memcpy(&megabuf[1], &mydata.temperature, sizeof(mydata.temperature));
         memcpy(&megabuf[3], &mydata.hum, sizeof(mydata.hum));
@@ -262,7 +262,7 @@ uint8_t datasender( uint8_t id )
     else if(id == 7 || id == 8){
         printf("Node %d, PM10\n", id);
 
-        megabuf[0] = id;
+        megabuf[0] = 0b10000000 | id;
         memcpy(&megabuf[1], &mydata.pm10, sizeof(mydata.pm10));
 
         nullnet_buf = (uint8_t *)&megabuf;
@@ -322,7 +322,11 @@ PROCESS_THREAD(rx_process,ev,data)
     //static uint8_t buf[10];
     PROCESS_BEGIN();
     nullnet_set_input_callback(input_callback2);
-    nodeid = get_nodeid(NODEID);
+    //nodeid = get_nodeid(NODEID);
+    uint8_t seed = linkaddr_node_addr.u8[0];
+    random_init(seed);
+    nodeid = (random_rand() % 8) + 1;
+    printf("***NODEID***: %d\n", nodeid);
 
     //PROCESS_YIELD();
     while(1)
@@ -379,14 +383,14 @@ PROCESS_THREAD(rx_process,ev,data)
         }
 
         else if(frame_header ==2){ 
-            LOG_INFO("Association response received\n");
+            LOG_INFO("Association response received for %d\n", datapoint[1]);
         
             //if(from == coordinator_addr) {
             if(linkaddr_cmp(&from, &coordinator_addr)) { 
                 LOG_INFO("Not associated, associating now\n");
+                PROCESS_CONTEXT_BEGIN(&associator_process);
                 is_associated = true; 
-                
-                
+                PROCESS_CONTEXT_END(&associator_process);
             }
             else{
                LOG_DBG("error, different adresses");
@@ -394,8 +398,6 @@ PROCESS_THREAD(rx_process,ev,data)
         }
                 
         else if(frame_header ==3) {
-            printf("poll request received\n");
-            printf("am i assoc: %d\n", is_associated);
             if(is_associated) {
                 process_poll(&poll_process);    
                 }
@@ -527,24 +529,27 @@ PROCESS_THREAD(associator_process, ev,data){
             static uint8_t i_pwr = 0;            
          
             buf[0] = 0b00100000; //association request
-            buf[1] = get_nodeid(NODEID); 
+            buf[1] = nodeid; 
             //buf[0] |= ???;
             /*---------------------------------------------------------------------------*/
             nullnet_buf = (uint8_t *)buf;
             nullnet_len = sizeof(buf);
 
             for (i_pwr = 0; i_pwr < 3; i_pwr++){
-                etimer_set(&asotimer, 5* CLOCK_SECOND);
-                printf("Sending assoc. Request, tx power: %02x\n", power_levels[i_pwr]);
+               
+
+                etimer_set(&asotimer, 2* CLOCK_SECOND + (random_rand() % (CLOCK_SECOND)));
+                
                 NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, power_levels[i_pwr]);
                 
                 
-               
-                NETSTACK_NETWORK.output(&coordinator_addr);
-                
+                //add some jitter   
                 
                 PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&asotimer));
-                if(is_associated){break;}
+                 if(is_associated ==1 ){break;}
+                printf("Sending assoc. Request, tx power: %02x\n", power_levels[i_pwr]);
+                NETSTACK_NETWORK.output(&coordinator_addr);
+                
                                 
             }
             if(!is_associated) 
