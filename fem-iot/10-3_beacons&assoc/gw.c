@@ -255,10 +255,6 @@ PROCESS_THREAD( parser_process, ev, data)
 
 
     //variables
-
-
-
-
     while(1){
 
         PROCESS_YIELD();
@@ -456,6 +452,21 @@ PROCESS_THREAD(association_process,ev,data){
 
 PROCESS_THREAD(callback_process,ev,data){
 
+     uint32_t fbuf; //float buffer
+    union {
+        float float_variable;
+        uint8_t temp_array[4];
+        } u;
+  
+    union{
+        uint32_t u32_var;
+        uint8_t temp_array[4];
+        } ua;
+
+    union{
+        int16_t u16_var;
+        uint8_t temp_array[2];
+        } ua2;
     uint8_t *buf;
     uint8_t frame; 
     PROCESS_BEGIN();
@@ -466,8 +477,6 @@ PROCESS_THREAD(callback_process,ev,data){
         //buf = (uint8_t *)malloc(cb_len);
         buf = packetbuf_dataptr();
         frame = (buf[0] & 0b11100000)>>5;
-
-       
         /*                  
         switch ((buf[0] & 224) >> 5 ) { //check the first 3 bits of the first byte
 
@@ -522,7 +531,123 @@ PROCESS_THREAD(callback_process,ev,data){
         }
         else if( frame ==4){
             LOG_DBG("Sensor Data received\n");
-            process_poll(&parser_process);
+            //process_poll(&parser_process);
+                   
+                    printf("PARSING\n");
+                    //switch(buf[0] & 31){
+                    switch(buf[0] & 0b00011111) //last 5 bits of the first byte is for NodeID?
+                    {
+                        case NODEID_MGAS1:
+                        case NODEID_MGAS2:
+                                    
+                        u.temp_array[0] = buf[1];
+                        u.temp_array[1] = buf[2];
+                        u.temp_array[2] = buf[3];
+                        u.temp_array[3] = buf[4];
+                        sensors.co = u.float_variable;
+                    
+
+                        u.temp_array[0] = buf[5];
+                        u.temp_array[1] = buf[6];
+                        u.temp_array[2] = buf[7];
+                        u.temp_array[3] = buf[8];
+                        sensors.no2 = u.float_variable;
+
+
+                        printf("{\"nodeID\": %d", buf[0] & 0b00011111);
+                        printf(",\"co\": ");
+                        fbuf = sensors.co * 100;
+                        printf("%lu.%02lu", fbuf/100, fbuf%100);
+                        printf(", \"no2\": ");
+                        fbuf = sensors.no2 * 100;
+                        printf("%lu.%02lu", fbuf/100, fbuf%100);
+                        printf("}\n");    
+                        break;
+
+
+
+                    case NODEID_DHT22_1:
+                    case NODEID_DHT22_2:
+                    
+
+                        ua2.temp_array[0] = buf[1];
+                        ua2.temp_array[1] = buf[2];
+                        
+                        memcpy(&sensors.temperature, &ua2.u16_var, sizeof(int16_t)); 
+                    
+
+                        ua2.temp_array[0] = buf[3];
+                        ua2.temp_array[1] = buf[4];
+                        memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
+                    
+                        ua.temp_array[0] = buf[5];
+                        ua.temp_array[1] = buf[6];
+                        ua.temp_array[2] = buf[7];
+                        ua.temp_array[3] = buf[8];
+
+                        memcpy(&sensors.noise, &ua.u32_var, sizeof(uint32_t));
+
+                    
+                        printf("{\"nodeID\": %d", buf[0] & 0b00011111);
+                        printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
+                        printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
+                        printf(",\"Noise\": %lu", sensors.noise);
+                        printf("}\n");
+
+                    
+                        break;
+                        
+                    case NODEID_O3_1:
+                    case NODEID_O3_2:
+                        
+                        ua2.temp_array[0] = buf[1];
+                        ua2.temp_array[1] = buf[2];
+                        
+                        memcpy(&sensors.temperature, &ua2.u16_var, sizeof(int16_t)); 
+                    
+
+                        ua2.temp_array[0] = buf[3];
+                        ua2.temp_array[1] = buf[4];
+                        memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
+
+                        u.temp_array[0] = buf[5];
+                        u.temp_array[1] = buf[6];
+                        u.temp_array[2] = buf[7];
+                        u.temp_array[3] = buf[8];
+                        
+                    
+                        memcpy(&sensors.o3, &u.float_variable, sizeof(float));
+                        fbuf = sensors.o3 * 100;
+                        
+
+
+                        printf("{\"nodeID\": %d", buf[0]&0b00011111);
+                        printf(",\"ppm\": ");
+                        printf("%lu.%02lu", fbuf/100, fbuf%100);
+                    
+                        printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
+                        printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
+                        printf("}\n");
+                        break;
+                    case NODEID_PM10_1:
+                    case NODEID_PM10_2:
+                    
+                        sensors.pm10 = (buf[2] << 8) | buf[1];
+                        printf("{\"nodeID\": %d", buf[0]&0b00011111);
+                        printf(",\"pm10\": %d", sensors.pm10);
+                        printf("}\n");
+                        break;
+                        //AOK!!
+                    
+                    default:
+                        /*printf("unknown nodeID %d\n", buf[0]);
+                        printf("BYTES copied are: ");
+                        for (int i = 0; i < len; i++) {
+                        printf("%d ", buf[i]);
+                        */        
+                        break;
+                    } //switch
+
         }
         else if( frame ==5){
             LOG_DBG("Energest Data received\n");

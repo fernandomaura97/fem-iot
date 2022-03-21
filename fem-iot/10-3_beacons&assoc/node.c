@@ -60,7 +60,7 @@ static clock_time_t time_of_beacon_rx;
 
 static struct etimer radiotimer;
 static struct etimer next_beacon_etimer;
-static struct etimer b_timer; 
+//static struct etimer b_timer; 
 static struct etimer asotimer;
 /*---------------------------------------------------------------------------*/
 //FLAGS
@@ -317,7 +317,7 @@ void input_callback2(const void *data, uint16_t len,
 
 PROCESS_THREAD(rx_process,ev,data)
 {   
-
+    static struct etimer Beacon_no_timer;
     volatile static uint8_t* datapoint; //pointer to the packetbuf
     //static uint8_t buf[10];
     PROCESS_BEGIN();
@@ -337,31 +337,36 @@ PROCESS_THREAD(rx_process,ev,data)
 
         if(frame_header ==0){
             LOG_INFO("Beacon received\n");
-            if(!beaconrx_f){
+                       
+            if(!beaconrx_f){ //if it's the first beacon received on this cycle
 
                 
                 linkaddr_copy(&coordinator_addr, &from); //store coordinator address
+                
                 uint8_t Beacon_no = datapoint[0] & 0b00011111;
 
                 if(Beacon_no == 0)
                 {
                     beaconrx_f = 1;
-                    etimer_set(&b_timer, CLOCK_SECOND);
-                    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&b_timer));
+                    etimer_set(&Beacon_no_timer, CLOCK_SECOND);
+                    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
+                    process_poll(&associator_process);
 
                 }
                 else if(Beacon_no == 1)
                 {   
                     beaconrx_f = 1;
-                    etimer_set(&b_timer, CLOCK_SECOND/2);
-                    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&b_timer));
+                    etimer_set(&Beacon_no_timer, CLOCK_SECOND/2);
+                    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
+                    process_poll(&associator_process);
 
                 }
                 else if(Beacon_no ==2)
                 {
                     beaconrx_f = 1; //no need to wait
+                    process_poll(&associator_process);
                 }
-                process_poll(&associator_process);
+                
                 //we have address in &coordinator_addr, 
             }
             else{
@@ -446,24 +451,17 @@ PROCESS_THREAD(poll_process, ev,data){
     while(1)
     {
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-        //process_exit(&rx_process);
-        //process_exit(&associator_process);
-        
+       
         buffer_poll = packetbuf_dataptr();
         
 
         printf("POLL frame!\n");
         printf("received poll for %d, I am node %d\n", buffer_poll[1], nodeid);
 
-
-
         if(buffer_poll[1] == nodeid)
             {
-                //printf("I'm transmitting in the %dth slot\n", buf[1]);
-                datasender(buffer_poll[1]);
-
-
-                //maybe try instead of function, to do the switch case here
+                
+                datasender(nodeid);
 
 
                 printf("finished sending\n");
@@ -474,9 +472,7 @@ PROCESS_THREAD(poll_process, ev,data){
                 etimer_set(&next_beacon_etimer, 357*CLOCK_SECOND - time_after_poll);
                 printf("still here\n");
     /*--------------------------------------------------------------------------------------------------------------------*/
-            
-                
-
+                         
                 
                 //printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu", 350*CLOCK_SECOND - time_after_poll, clock_time(), time_of_beacon_rx, time_after_poll);
                 //etimer_set(&next_beacon_etimer, CLOCK_SECOND * 2);
@@ -485,9 +481,10 @@ PROCESS_THREAD(poll_process, ev,data){
 
                 PROCESS_WAIT_UNTIL(etimer_expired(&next_beacon_etimer));
                 NETSTACK_RADIO.on();
-                printf("radio back on, beacon in ~2s \n");
+                printf("radio back on, beacon in ~2s!!! \n");
+                PROCESS_CONTEXT_BEGIN(&rx_process);
                 beaconrx_f = 0;
-
+                PROCESS_CONTEXT_END(&rx_process);
                 
             }
             else
@@ -592,10 +589,6 @@ PROCESS_THREAD(associator_process, ev,data){
         }   
         amipolled_f = 0; 
         beaconrx_f= 0 ; 
-
-
-
-        PROCESS_YIELD();  
         
         //CODE STARTS HERE
     }
