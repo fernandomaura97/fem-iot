@@ -50,9 +50,14 @@
 #include "lib/sensors.h"
 #include "dev/gpio.h"
 #include "dev/ioc.h"
+#include "sys/log.h"
 /*---------------------------------------------------------------------------*/
 #define PM10_SENSOR_PORT_BASE   GPIO_PORT_TO_BASE(PM10_SENSOR_CTRL_PORT)
 #define PM10_SENSOR_PIN_MASK    GPIO_PIN_MASK(PM10_SENSOR_CTRL_PIN)
+
+#define LOG_MODULE "PM10"
+#define LOG_LEVEL LOG_LEVEL_DBG
+
 /*---------------------------------------------------------------------------*/
 static int pm10_channel;
 /*---------------------------------------------------------------------------*/
@@ -82,6 +87,7 @@ static int
 value(int type)
 {
   uint32_t val;
+  float corrected_val_ard; 
 
   if(!pm10_channel) {
     return PM10_ERROR;
@@ -93,6 +99,10 @@ value(int type)
   clock_delay_usec(PM10_SENSOR_PULSE_DELAY);
   /* Data acquisition */  
   val = (uint32_t)adc_zoul.value(pm10_channel); 
+  //LOG_DBG("ADC value: %lu\n", val);
+
+  int16_t mV = val * 1000 / 3333 - 278; //CLOSE ENOUGH, ERROR +- 0.1V 
+ 
 
   if(val == ZOUL_SENSORS_ERROR) {
     printf("PM10 sensor: failed retrieving data\n");
@@ -109,11 +119,25 @@ value(int type)
   /* Applied constant conversion from UAir project
    * to obtain value in ppm (value in mV * 0.28)
    */
+  
+ 
+
+  
+
+  corrected_val_ard = ((float) mV/1000 - 0.5) / 0.5 * 100; //-0.5 == zeroDustvoltage,    0.5 == sensitivity 
+  
+  
+
   val *= 28;
   val /= 1000;
 
+
   /* Clear pulse wave pin */
   GPIO_CLR_PIN(PM10_SENSOR_PORT_BASE, PM10_SENSOR_PIN_MASK);
+   
+   
+   LOG_DBG("voltage : %d mV\n", mV);
+  LOG_DBG("Corrected value: %d ug/m³\n", (int )corrected_val_ard); //ug/m3
   
   return (uint16_t)val;
 }
