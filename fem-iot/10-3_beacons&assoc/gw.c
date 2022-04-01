@@ -58,8 +58,11 @@ static linkaddr_t from;
 
 #define ROUTENUMBER 8 //for now, then it should be bigger
 
+static uint16_t lost_message_counter = 0;
+static bool poll_response_received = 0; 
 static linkaddr_t addr_stas[ROUTENUMBER]; //store sta's addresses in here, for routing and sending
 static linkaddr_t buffer_addr; 
+
 const linkaddr_t addr_empty = {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}; //placeholder address
 
 #define SPEED_NW 1 //Speed >1 if we want faster beacons and times ( for debugging "quicker" without changing too much code)
@@ -185,13 +188,28 @@ PROCESS_THREAD(coordinator_process, ev,data)
 
                 dt = clock_time() - t;
                 LOG_INFO("polling node %d, dt: %lu\n", i, dt/CLOCK_SECOND);
-                NETSTACK_NETWORK.output(NULL);
+               
+               NETSTACK_NETWORK.output(NULL); //POLLING IS BROADCAST, SHOULD BE UNICAST??
+
+                
                 
                 etimer_set(&periodic_timer, T_SLOT); //set the timer for the next interval
                 PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+                
+                if(!poll_response_received){
+                    LOG_INFO("polling node %d, no response!! TRYING AGAIN \n", i);
+
+                    // HERE, TRY AGAIN? 
+                    NETSTACK_NETWORK.output(NULL);; 
+                }
 
                 etimer_set(&periodic_timer, T_GUARD);
                 PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+                if(!poll_response_received){
+                    LOG_INFO("ERROR: POLL no RESPONSE!!\n");
+                    lost_message_counter ++;
+                }
+                poll_response_received = 0;
 
 
            }
@@ -489,7 +507,7 @@ PROCESS_THREAD(callback_process,ev,data){
         else if( frame ==4){
             LOG_DBG("Sensor Data received\n");
             //process_poll(&parser_process);
-                   
+                    poll_response_received = 1; //we received a poll response
                     printf("PARSING\n");
                     //switch(buf[0] & 31){
                     switch(buf[0] & 0b00011111) //last 5 bits of the first byte is for NodeID?
