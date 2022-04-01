@@ -14,6 +14,7 @@
 #define LOG_LEVEL LOG_LEVEL_DBG
 
 #define DEBUG 1
+#define COOJA 0
 
 #if DEBUG
 
@@ -43,7 +44,7 @@
 #define NODEID7 64
 #define NODEID8 128
 
-#define NODEID NODEID3
+#define NODEID NODEID5
 
 
 #define T_MDB  (10 * CLOCK_SECOND)
@@ -322,10 +323,13 @@ PROCESS_THREAD(rx_process,ev,data)
     //static uint8_t buf[10];
     PROCESS_BEGIN();
     nullnet_set_input_callback(input_callback2);
-    //nodeid = get_nodeid(NODEID);
+    nodeid = get_nodeid(NODEID);
+    
+    #if COOJA
     uint8_t seed = linkaddr_node_addr.u8[0];
     random_init(seed);
     nodeid = (random_rand() % 8) + 1;
+    #endif
     printf("***NODEID***: %d\n", nodeid);
 
     //PROCESS_YIELD();
