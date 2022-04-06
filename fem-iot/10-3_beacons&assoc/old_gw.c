@@ -58,11 +58,8 @@ static linkaddr_t from;
 
 #define ROUTENUMBER 8 //for now, then it should be bigger
 
-static uint16_t lost_message_counter = 0;
-static bool poll_response_received = 0; 
 static linkaddr_t addr_stas[ROUTENUMBER]; //store sta's addresses in here, for routing and sending
 static linkaddr_t buffer_addr; 
-
 const linkaddr_t addr_empty = {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}; //placeholder address
 
 #define SPEED_NW 1 //Speed >1 if we want faster beacons and times ( for debugging "quicker" without changing too much code)
@@ -151,7 +148,6 @@ PROCESS_THREAD(coordinator_process, ev,data)
         
         static uint8_t i;
         bitmask = 0xFF;
-
         for (i= 0; i<3; i++)
         {
             beaconbuf[1] = bitmask; 
@@ -169,7 +165,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
             }
         }
         
-        etimer_set(&mm_timer, T_MM); /// T_MDB wait
+        etimer_set(&mm_timer, T_MM); //set the timer for the next interval
         
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&mm_timer));
 
@@ -188,28 +184,13 @@ PROCESS_THREAD(coordinator_process, ev,data)
 
                 dt = clock_time() - t;
                 LOG_INFO("polling node %d, dt: %lu\n", i, dt/CLOCK_SECOND);
-               
-               NETSTACK_NETWORK.output(NULL); //POLLING IS BROADCAST, SHOULD BE UNICAST??
-
-                
+                NETSTACK_NETWORK.output(NULL);
                 
                 etimer_set(&periodic_timer, T_SLOT); //set the timer for the next interval
                 PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-                
-                if(!poll_response_received){
-                    LOG_INFO("polling node %d, no response!! TRYING AGAIN \n", i);
-
-                    // HERE, TRY AGAIN? 
-                    NETSTACK_NETWORK.output(NULL);; 
-                }
 
                 etimer_set(&periodic_timer, T_GUARD);
                 PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-                if(!poll_response_received){
-                    LOG_INFO("ERROR: POLL no RESPONSE!!\n");
-                    lost_message_counter ++;
-                }
-                poll_response_received = 0;
 
 
            }
@@ -489,7 +470,44 @@ PROCESS_THREAD(callback_process,ev,data){
         //buf = (uint8_t *)malloc(cb_len);
         buf = packetbuf_dataptr();
         frame = (buf[0] & 0b11100000)>>5;
-        
+        /*                  
+        switch ((buf[0] & 224) >> 5 ) { //check the first 3 bits of the first byte
+
+            case 0:
+                LOG_INFO("Beacon received ??\n"); //this is only for stas to hear
+                break;
+
+            case 1:
+                LOG_INFO("Association request received\n");
+                linkaddr_copy(&buffer_addr, &from );
+                process_poll(&association_process);    
+                break;
+
+            case 2:
+                LOG_INFO("Association response received ??\n"); //this is only for stas to hear
+                break;
+
+            case 3: 
+                LOG_INFO("Poll request received ?? \n"); //this is only for stas to hear
+                break;
+
+            case 4:
+                LOG_INFO("Sensor Data received\n");
+                process_poll(&parser_process);
+                break;          
+
+            case 5: 
+                LOG_INFO("Energest Data received\n");
+                //Are we going to use this really? Maybe checking the consumptions in the lab through serial monitor
+                //should be enough for making a model, since the network is "deterministic" 
+                break;
+
+            default:
+                LOG_INFO("Unknown packet received\n");
+       
+                      break;
+        }
+        */
         if (frame == 0){
             LOG_DBG("Beacon received ??\n");
         }
@@ -507,7 +525,7 @@ PROCESS_THREAD(callback_process,ev,data){
         else if( frame ==4){
             LOG_DBG("Sensor Data received\n");
             //process_poll(&parser_process);
-                    poll_response_received = 1; //we received a poll response
+                   
                     printf("PARSING\n");
                     //switch(buf[0] & 31){
                     switch(buf[0] & 0b00011111) //last 5 bits of the first byte is for NodeID?

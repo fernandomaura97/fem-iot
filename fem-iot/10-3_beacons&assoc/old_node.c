@@ -475,7 +475,7 @@ PROCESS_THREAD(poll_process, ev,data){
                 RTIMER_BUSYWAIT(5);
                 time_after_poll = clock_time() - time_of_beacon_rx;
                 printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu", 350 - time_after_poll/CLOCK_SECOND, clock_time()/CLOCK_SECOND, time_of_beacon_rx/CLOCK_SECOND, time_after_poll/CLOCK_SECOND);
-                etimer_set(&next_beacon_etimer, 357*CLOCK_SECOND - time_after_poll);
+                etimer_set(&next_beacon_etimer, T_BEACON - 3*CLOCK_SECOND - time_after_poll);
                 printf("still here\n");
     /*--------------------------------------------------------------------------------------------------------------------*/
                          
@@ -605,6 +605,4 @@ PROCESS_THREAD(associator_process, ev,data){
     PROCESS_END();
 
 }
-
-
 
