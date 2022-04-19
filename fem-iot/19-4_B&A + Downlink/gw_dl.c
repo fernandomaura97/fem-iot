@@ -9,6 +9,9 @@
 #include "sys/clock.h"
 #include <stdlib.h>
 
+#include "dev/leds.h"
+#include "dev/uart.h"
+#include "dev/serial-line.h"
 
 #include "sys/log.h"
 
@@ -237,6 +240,10 @@ PROCESS_THREAD(coordinator_process, ev,data)
         
         if(ev ==serial_line_event_message){
             LOG_DBG("received: %s\n", (char *)data);
+
+            leds_toggle(LEDS_GREEN);
+
+            leds_toggle(LEDS_GREEN);
 
             //get the first character of received data
             //char c = *((char *)data);
@@ -494,7 +501,7 @@ PROCESS_THREAD(callback_process,ev,data){
     uint8_t *buf;
     uint8_t frame; 
     PROCESS_BEGIN();
-    //PROCESS_YIELD();
+
 
     while(1) {      
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
