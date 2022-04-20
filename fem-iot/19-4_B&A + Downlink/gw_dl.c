@@ -61,6 +61,9 @@ static linkaddr_t from;
 
 #define ROUTENUMBER 8 //for now, then it should be bigger
 
+
+static char *rxdata;
+
 static uint16_t lost_message_counter = 0;
 static bool poll_response_received = 0; 
 static linkaddr_t addr_stas[ROUTENUMBER]; //store sta's addresses in here, for routing and sending
@@ -69,7 +72,7 @@ static linkaddr_t buffer_addr;
 const linkaddr_t addr_empty = {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}; //placeholder address
 
 #define SPEED_NW 1 //Speed >1 if we want faster beacons and times ( for debugging "quicker" without changing too much code)
-#define SEND_INTERVAL (220 * CLOCK_SECOND * (1/SPEED_NW))
+//#define SEND_INTERVAL (220 * CLOCK_SECOND * (1/SPEED_NW))
 #define BEACON_INTERVAL (60* CLOCK_SECOND * (1/SPEED_NW))
 #define T_MM (10* CLOCK_SECOND  * 1/SPEED_NW)
 #define T_GUARD (0.5 * CLOCK_SECOND * 1/SPEED_NW)
@@ -88,12 +91,12 @@ uint8_t global_buffer[20];
 
 PROCESS(coordinator_process, "fem-iot coordinator process");
 //PROCESS(beacon_process, "beacon process");
-
+PROCESS(serial_process, "Serial process");
 PROCESS(parser_process, "Parsing process");
 PROCESS(association_process, "Association process");
 PROCESS(callback_process,"Callback process");
 
-AUTOSTART_PROCESSES(&coordinator_process, &parser_process, &association_process, &callback_process);
+AUTOSTART_PROCESSES(&coordinator_process, &parser_process, &association_process, &callback_process, &serial_process);
 
 /*---------------------------------------------------------------------------*/
 
@@ -108,6 +111,13 @@ void input_callback(const void *data, uint16_t len,
 
     process_poll(&callback_process);
 }
+
+
+
+
+
+
+
 
 
 
@@ -149,7 +159,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
 
     while(1)
     {
-    
+        printf("AA0\n"); //NODE-RED HEARTBEAT
         etimer_set(&beacon_timer, BEACON_INTERVAL); //set the timer for the next interval
         
         static uint8_t i;
@@ -229,29 +239,9 @@ PROCESS_THREAD(coordinator_process, ev,data)
               }
         }
         LOG_INFO("Polling finished\n");
-        
-
-
+      
          //if we need to change bitmask for next loop, do it here      
          //also use this time for uplink and downlink extra communications
-
-
-        PROCESS_YIELD(); 
-        
-        if(ev ==serial_line_event_message){
-            LOG_DBG("received: %s\n", (char *)data);
-
-            leds_toggle(LEDS_GREEN);
-
-            leds_toggle(LEDS_GREEN);
-
-            //get the first character of received data
-            //char c = *((char *)data);
-            
-            
-
-        }
-
 
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&beacon_timer));
         
@@ -655,4 +645,29 @@ PROCESS_THREAD(callback_process,ev,data){
     
     } //while      
     PROCESS_END();
+}
+
+
+
+
+PROCESS_THREAD(serial_process, ev, data)
+{
+  
+  PROCESS_BEGIN();
+  uart_set_input(0, serial_line_input_byte);
+  leds_toggle(LEDS_GREEN);
+
+  while(1) {
+    PROCESS_YIELD();                           // Surt del procés temporalment, fins que arribi un event/poll
+    
+    if(ev == serial_line_event_message) {      // Si l'event indica que ha arribat un missatge UART
+      leds_toggle(LEDS_RED);
+      rxdata = data;                           // Guardem el missatge a rxdata
+      printf("Data received over UART: %s\n", rxdata);    //Mostrem el missatge rebut.
+      leds_toggle(LEDS_RED); 
+    }
+    
+  }
+
+  PROCESS_END();
 }
