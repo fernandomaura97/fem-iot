@@ -22,6 +22,7 @@
 #define ADC_PIN 2 // ADC1 utilitza el pin 5 i ADC3 utilitza el pin 2. Es pot veure en el datasheet
 #define SENSOR_READ_INTERVAL (CLOCK_SECOND / 8)
 #define NODEID 1
+#define DEBUG
 /*---------------------------------------------------------------------------*/
 static struct etimer et;
 uint16_t counter_uart;
@@ -83,13 +84,15 @@ unsigned int uart1_send_bytes(const unsigned char *s, unsigned int len){
 
 void serial_in(){ // Implementa la lògica a la cadena de caràcters que ha entrat al UART. node_db_24
 
-
-  printf("byebye %s\n", buf_in);
-
+  #ifdef DEBUG
+  printf("dentro serial_in %s\n", buf_in);
+  #endif
   
   if (strncmp(buf_in, "BO", 2) == 0){ // B0 indicarà al db_24 que el missatge és beacon
 
-    printf("HOLAHOLAHOLA\n");
+    #ifdef DEBUG
+    printf("dentro del if STRNCMP\n"); /// NO ARRIBA A FER PRINT == NO ES COMPLEIX EL IF STRNCMP!!!
+    #endif
     leds_toggle(LEDS_GREEN);
 
   
