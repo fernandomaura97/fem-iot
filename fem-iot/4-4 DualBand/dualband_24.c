@@ -25,14 +25,15 @@
 /*---------------------------------------------------------------------------*/
 static struct etimer et;
 uint16_t counter_uart;
-char buf_out[100];
-char buf_in[100];
-uint8_t beacon [3];
+static char buf_in[100];
+uint8_t beacon[3];
 int16_t temperature, humidity;
 uint8_t nodeid = NODEID;
 uint16_t loudness;
-char delimitador[4] = ",";
-char* b[4];
+const char delimitador[2] = ",";
+
+
+
 //uint8_t sortida[3];
 long int sortida[3];
 char* endPtr;
@@ -42,7 +43,7 @@ PROCESS(dual_band, "dual band");
 AUTOSTART_PROCESSES(&dual_band);
 /*---------------------------------------------------------------------------*/
 
-void funcio_sensors(){
+/*void funcio_sensors(){
   SENSORS_ACTIVATE(dht22);
   adc_sensors.configure(ANALOG_GROVE_LOUDNESS, ADC_PIN);
 
@@ -65,7 +66,7 @@ void funcio_sensors(){
     printf("Error, enable the DEBUG flag in adc-wrapper.c for info\n");
   }
   printf("\n");
-}
+}*/
 
 unsigned int uart1_send_bytes(const unsigned char *s, unsigned int len){  
   unsigned int i = 0;
@@ -82,28 +83,49 @@ unsigned int uart1_send_bytes(const unsigned char *s, unsigned int len){
 
 void serial_in(){ // Implementa la lògica a la cadena de caràcters que ha entrat al UART. node_db_24
 
+
+  printf("byebye %s\n", buf_in);
+
+  
   if (strncmp(buf_in, "BO", 2) == 0){ // B0 indicarà al db_24 que el missatge és beacon
 
+    printf("HOLAHOLAHOLA\n");
     leds_toggle(LEDS_GREEN);
 
-    sprintf(buf_out, "B0, %d, %d, %d\n", beacon[0], beacon[1], beacon[2]);
-    uart1_send_bytes((uint8_t *)buf_out, sizeof(buf_out)-1);
-    
+  
     leds_toggle(LEDS_RED);
 
-    printf("SERIAL DATA OUT --> %s", (char *) buf_out);
-    printf("***********************\n");
+    char *token = strtok(buf_in, delimitador);
+    int i= 0; 
     
+    while(token != NULL){
+      token = strtok(NULL, delimitador);
+      if(i == 0){
+        beacon[0] = atoi(token);
+      }
+      else if(i == 1){
+        beacon[1] = atoi(token);
+      }
+      else if(i == 2){
+        beacon[2] = atoi(token);
+      }
+      i++;
+    }
+
+  printf("HOLA %d, %d, %d\n", beacon[0], beacon[1], beacon[2]);
+   
     //Extreure de cada substring (b[0], b[1], b[2]) el valor numèric
-    char* token = strtok(buf_out, delimitador);
+    /*char* token = strtok(buf_out, delimitador);
     int j = 0; 
     if(token != NULL){
         while(token != NULL){
             b[j] = token;
             j++;
             token = strtok(NULL, delimitador);
+            printf("%s\n", token]);
         }
     }
+
     for (int i = 0; i<4; i++){
         //Substring del string
         printf("b[i]: %s, ", b[i]);
@@ -112,7 +134,14 @@ void serial_in(){ // Implementa la lògica a la cadena de caràcters que ha entr
         printf("La variable uint8_t és: %ld\n", sortida[i]);
     }
     // NO TINC MOLT CLAR COM ENVIAR-LO ALS NODES SENSORS:/
-    funcio_sensors(); // Mesura sensors
+    funcio_sensors(); // Mesura sensors*/
+
+
+  nullnet_buf = beacon;
+  //memcpy(nullnet_buf, sortida, sizeof(sortida));
+  nullnet_len = 3;
+
+  NETSTACK_NETWORK.output(NULL);
   }
 }
 
@@ -129,19 +158,7 @@ int print_uart(unsigned char c){
 	return 1;
 }
 
-void input_callback(const void *data, uint16_t len,
-  const linkaddr_t *src, const linkaddr_t *dest)
-{
-  //uint8_t* bytebuf = (uint8_t*) data;
-  uint8_t* bytebuf;
-  bytebuf = malloc(len);
-  memcpy(bytebuf, data, len);
-  char string[20];
 
-  sprintf(string, "B0, %d, %d, %d\n", bytebuf[0], bytebuf[1], bytebuf[2]);
-
-  uart1_send_bytes((uint8_t *)string, sizeof(string) - 1);
-}
 
 
 /*---------------------------------------------------------------------------*/
@@ -151,9 +168,14 @@ PROCESS_THREAD(dual_band, ev, data){
 
   uart_set_input(1, print_uart);
 
-  nullnet_set_input_callback(input_callback);
-
   etimer_set(&et, CLOCK_SECOND * 4);
+  PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+
+  sprintf(buf_in, "B0, %d, %d, %d", 0, 23, 44);
+  
+  serial_in(); 
+
+
   leds_toggle(LEDS_RED);
 
   PROCESS_END();

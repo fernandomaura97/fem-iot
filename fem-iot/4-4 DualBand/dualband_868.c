@@ -23,7 +23,7 @@
 #define SENSOR_READ_INTERVAL (CLOCK_SECOND / 8)
 #define NODEID 1
 /*---------------------------------------------------------------------------*/
-static struct etimer et;
+//static struct etimer et;
 uint16_t counter_uart;
 char buf_out[100];
 char buf_in[100];
@@ -31,7 +31,7 @@ uint8_t beacon [3];
 int16_t temperature, humidity;
 uint8_t nodeid = NODEID;
 uint16_t loudness;
-char delimitador[4] = ",";
+char delimitador = ",";
 char* b[4];
 //uint8_t sortida[3];
 long int sortida[3];
@@ -42,30 +42,7 @@ PROCESS(dual_band, "dual band");
 AUTOSTART_PROCESSES(&dual_band);
 /*---------------------------------------------------------------------------*/
 
-void funcio_sensors(){
-  SENSORS_ACTIVATE(dht22);
-  adc_sensors.configure(ANALOG_GROVE_LOUDNESS, ADC_PIN);
 
-  if(dht22_read_all(&temperature, &humidity) != DHT22_ERROR){
-    printf("{\"nodeID\": %u", nodeid);
-
-    printf(",\"Temperature\": %02d.%02d", temperature / 10, temperature % 10);
-    printf(", \"Humidity\": %02d.%02d", humidity / 10, humidity % 10);
-  }
-  else{
-    printf("Failed to read the sensor\n");
-  }
-
-  loudness = adc_sensors.value(ANALOG_GROVE_LOUDNESS);
-
-  if(loudness != ADC_WRAPPER_ERROR){
-    printf(", \"Noise\": %u}", loudness);
-  }
-  else{
-    printf("Error, enable the DEBUG flag in adc-wrapper.c for info\n");
-  }
-  printf("\n");
-}
 
 unsigned int uart1_send_bytes(const unsigned char *s, unsigned int len){  
   unsigned int i = 0;
@@ -80,7 +57,7 @@ unsigned int uart1_send_bytes(const unsigned char *s, unsigned int len){
   return i;
 }
 
-void serial_in(){ // Implementa la lògica a la cadena de caràcters que ha entrat al UART. node_db_24
+/*void serial_in(){ // Implementa la lògica a la cadena de caràcters que ha entrat al UART. node_db_24
 
   if (strncmp(buf_in, "BO", 2) == 0){ // B0 indicarà al db_24 que el missatge és beacon
 
@@ -115,8 +92,9 @@ void serial_in(){ // Implementa la lògica a la cadena de caràcters que ha entr
     funcio_sensors(); // Mesura sensors
   }
 }
+*/
 
-int print_uart(unsigned char c){
+/*int print_uart(unsigned char c){
 	buf_in[counter_uart] = c;
 	counter_uart++;
 
@@ -128,6 +106,7 @@ int print_uart(unsigned char c){
 	
 	return 1;
 }
+*/
 
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
@@ -136,6 +115,9 @@ void input_callback(const void *data, uint16_t len,
   uint8_t* bytebuf;
   bytebuf = malloc(len);
   memcpy(bytebuf, data, len);
+
+
+  printf("Data beacon: B0 %d %d %d\n", bytebuf[0], bytebuf[1], bytebuf[2]);
   char string[20];
 
   sprintf(string, "B0, %d, %d, %d\n", bytebuf[0], bytebuf[1], bytebuf[2]);
@@ -149,12 +131,11 @@ PROCESS_THREAD(dual_band, ev, data){
 
   PROCESS_BEGIN();
 
-  uart_set_input(1, print_uart);
+  //uart_set_input(1, print_uart);
 
   nullnet_set_input_callback(input_callback);
 
-  etimer_set(&et, CLOCK_SECOND * 4);
-  leds_toggle(LEDS_RED);
-
+  while(1){
+  }
   PROCESS_END();
 }

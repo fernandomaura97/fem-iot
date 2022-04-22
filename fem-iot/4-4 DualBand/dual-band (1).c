@@ -11,9 +11,6 @@
 #include "dev/gpio-hal.h"
 #include "net/netstack.h"
 #include "net/nullnet/nullnet.h"
-
-#include "net/packetbuf.h"
-
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -33,8 +30,7 @@ uint8_t nodeid = NODEID;
 uint16_t loudness;
 char delimitador[4] = ",";
 char* b[4];
-//uint8_t sortida[3];
-long int sortida[3];
+uint8_t sortida[3];
 char* endPtr;
 int i = 0;
 /*---------------------------------------------------------------------------*/
@@ -95,16 +91,16 @@ void serial_in(){ // Implementa la lògica a la cadena de caràcters que ha entr
     printf("***********************\n");
     
     //Extreure de cada substring (b[0], b[1], b[2]) el valor numèric
-    char* token = strtok(buf_out, delimitador);
-    int j = 0; 
+    char* token = strtok(buffer, delimitador);
+    
     if(token != NULL){
         while(token != NULL){
-            b[j] = token;
-            j++;
+            b[i] = token;
+            i++;
             token = strtok(NULL, delimitador);
         }
     }
-    for (int i = 0; i<4; i++){
+    for (int i = 0; i<=4; i++){
         //Substring del string
         printf("b[i]: %s, ", b[i]);
         // Reemsamblar el beacon al db_24 i enviar-lo cap als nodes sensors
@@ -113,7 +109,7 @@ void serial_in(){ // Implementa la lògica a la cadena de caràcters que ha entr
     }
     // NO TINC MOLT CLAR COM ENVIAR-LO ALS NODES SENSORS:/
     funcio_sensors(); // Mesura sensors
-  }
+    
 }
 
 int print_uart(unsigned char c){
@@ -129,30 +125,18 @@ int print_uart(unsigned char c){
 	return 1;
 }
 
-void input_callback(const void *data, uint16_t len,
-  const linkaddr_t *src, const linkaddr_t *dest)
-{
-  //uint8_t* bytebuf = (uint8_t*) data;
-  uint8_t* bytebuf;
-  bytebuf = malloc(len);
-  memcpy(bytebuf, data, len);
+void nullnet_set_input_callback	(nullnet_input_callback 	callback){
   char string[20];
 
-  sprintf(string, "B0, %d, %d, %d\n", bytebuf[0], bytebuf[1], bytebuf[2]);
-
+  sprintf(string, "B0, %d, %d, %d\n", beacon[0], beacon[1], beacon[2]);
   uart1_send_bytes((uint8_t *)string, sizeof(string) - 1);
 }
-
-
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(dual_band, ev, data){
 
   PROCESS_BEGIN();
-
   uart_set_input(1, print_uart);
-
-  nullnet_set_input_callback(input_callback);
-
+  nullnet_set_input_callback(&callback_nullnet);
   etimer_set(&et, CLOCK_SECOND * 4);
   leds_toggle(LEDS_RED);
 
