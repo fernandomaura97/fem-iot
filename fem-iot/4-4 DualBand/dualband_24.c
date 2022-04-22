@@ -22,7 +22,6 @@
 #define ADC_PIN 2 // ADC1 utilitza el pin 5 i ADC3 utilitza el pin 2. Es pot veure en el datasheet
 #define SENSOR_READ_INTERVAL (CLOCK_SECOND / 8)
 #define NODEID 1
-#define DEBUG
 /*---------------------------------------------------------------------------*/
 static struct etimer et;
 uint16_t counter_uart;
