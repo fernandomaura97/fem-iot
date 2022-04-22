@@ -87,11 +87,19 @@ void serial_in(){ // Implementa la lògica a la cadena de caràcters que ha entr
   #ifdef DEBUG
   printf("dentro serial_in %s\n", buf_in);
   #endif
-  
-  if (strncmp(buf_in, "BO", 2) == 0){ // B0 indicarà al db_24 que el missatge és beacon
+
+  //potser de linea 91 a 99 no és necessari
+      char buffer_header[20];
+      strcpy(buffer_header, buf_in);
+      printf("bufheader %s\n", buffer_header);
+      char *header; 
+      header = strtok(buffer_header, delimitador); //agafem només "B0"
+      printf("header %s\n", header);
+
+  if (!strncmp(header, "BO", sizeof("B0")) == 0){ // B0 indicarà al db_24 que el missatge és beacon
 
     #ifdef DEBUG
-    printf("dentro del if STRNCMP\n"); /// NO ARRIBA A FER PRINT == NO ES COMPLEIX EL IF STRNCMP!!!
+    printf("dentro del if STRNCMP\n"); 
     #endif
     leds_toggle(LEDS_GREEN);
 
@@ -173,11 +181,11 @@ PROCESS_THREAD(dual_band, ev, data){
 
   etimer_set(&et, CLOCK_SECOND * 4);
   PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-
+#ifdef DEBUG
   sprintf(buf_in, "B0, %d, %d, %d", 0, 23, 44);
   
   serial_in(); 
-
+#endif
 
   leds_toggle(LEDS_RED);
 
