@@ -17,7 +17,7 @@
 
 
 #define LOG_MODULE "App"
-#define LOG_LEVEL LOG_LEVEL_DBG
+#define LOG_LEVEL LOG_LEVEL_NONE
 
 
 #define NODEID_MGAS1 1
@@ -63,6 +63,7 @@ static linkaddr_t from;
 
 
 static char *rxdata;
+static uint8_t bitmask;
 
 static uint16_t lost_message_counter = 0;
 static bool poll_response_received = 0; 
@@ -130,7 +131,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
     static struct etimer mm_timer;
     static struct etimer beacon_timer;
 
-    static uint8_t bitmask;
+    
     static uint8_t beaconbuf[3];
 
     static clock_time_t t;
@@ -160,10 +161,11 @@ PROCESS_THREAD(coordinator_process, ev,data)
     while(1)
     {
         printf("AA0\n"); //NODE-RED HEARTBEAT
+        printf("BM is %d\n", bitmask);
         etimer_set(&beacon_timer, BEACON_INTERVAL); //set the timer for the next interval
         
         static uint8_t i;
-        bitmask = 0xFF;                       //CHANGE THIS LATER, WILL FORCE BITMASK TO BE 0xFF
+        //bitmask = 0xFF;                       //CHANGE THIS LATER, WILL FORCE BITMASK TO BE 0xFF
 
         for (i= 0; i<3; i++)
         {
@@ -663,9 +665,39 @@ PROCESS_THREAD(serial_process, ev, data)
     if(ev == serial_line_event_message) {      // Si l'event indica que ha arribat un missatge UART
       leds_toggle(LEDS_RED);
       rxdata = data;                           // Guardem el missatge a rxdata
-      printf("Data received over UART: %s\n", rxdata);    //Mostrem el missatge rebut.
+      LOG_DBG("Data received over UART: %s\n", rxdata);    //Mostrem el missatge rebut.
       leds_toggle(LEDS_RED); 
-    }
+
+      char buffer_header[30];
+      strcpy(buffer_header, rxdata);
+      LOG_DBG("buffer header: %s\n", buffer_header);
+      char *header; 
+      header = strtok(buffer_header, ",");
+      LOG_DBG("header: %s\n", header);
+
+
+
+    if (strcmp(header, "BM") == 0) { //If we received a new BM from the GW
+        
+        
+        char *token = strtok(NULL, ",");
+        uint8_t buf_bitmask = 0;
+
+        if(token != NULL) { //only once
+            
+            LOG_DBG("token: %s\n", token);
+            buf_bitmask = atoi(token);
+
+            LOG_DBG("bitmask value (serial): %d\n", buf_bitmask);
+            bitmask = buf_bitmask; //store received bitmask for next cycle
+            
+
+        }   
+        else{
+            LOG_ERR("Error parsing bitmask\n");
+        }
+    }    
+   }
     
   }
 

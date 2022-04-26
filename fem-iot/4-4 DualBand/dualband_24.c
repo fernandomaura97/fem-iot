@@ -109,7 +109,8 @@ void serial_in(){ // Implementa la lògica a la cadena de caràcters que ha entr
     int i= 0; 
     
     while(token != NULL){
-      token = strtok(NULL, delimitador);
+
+      //token = strtok(NULL, delimitador);
       if(i == 0){
         beacon[0] = atoi(token);
       }
