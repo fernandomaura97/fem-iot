@@ -5,6 +5,7 @@
 #include <stdio.h> /* For printf() */
 #include "random.h"
 #include "dev/radio.h"
+#include "dev/dht22.h"
 #include <stdlib.h>
 #include "net/packetbuf.h"
 
@@ -35,16 +36,16 @@
 */
 
 
-#define NODEID1 1
-#define NODEID2 2
-#define NODEID3 4
+#define NODEID1 1  // non-adaptive, test
+#define NODEID2 2 //DHT22
+#define NODEID3 4 // PM10 
 #define NODEID4 8
 #define NODEID5 16
 #define NODEID6 32
 #define NODEID7 64
 #define NODEID8 128
 
-#define NODEID NODEID3
+#define NODEID NODEID2
 
 
 #define T_MDB  (10 * CLOCK_SECOND)
@@ -77,7 +78,8 @@ static volatile uint8_t i_buf;
 static uint8_t *buffer_poll;
 static uint8_t nodeid;
 
-//CONSTANTS
+
+
 const uint8_t power_levels[3] = {0x46, 0x71, 0x7F}; // 0dB, 8dB, 14dB
 
 
@@ -120,6 +122,44 @@ uint8_t get_nodeid(uint8_t id)
     }
     return 0;
 }
+
+void m_and_send_dht22()
+{
+    uint8_t buf_dht22[5];
+    int16_t temperature, humidity;
+
+    SENSORS_ACTIVATE(dht22);
+
+    if(dht22_read_all(&temperature, &humidity)!= DHT22_ERROR)
+    {
+        mydata.hum = humidity;
+        mydata.temperature = temperature;
+
+        LOG_DBG("Temperature: %02d.%d C\n", temperature/10, temperature%10);
+        LOG_DBG("Humidity: %02d.%d \n", humidity/10, humidity%10);
+    }
+    else
+    {
+        mydata.hum = 0;
+        mydata.temperature = 0;
+        LOG_ERR("FAILED TO READ DHT22\n");
+    }
+    
+    SENSORS_DEACTIVATE(dht22);
+
+    buf_dht22[0] = 0b10000000 | 2;
+    memcpy(&buf_dht22[1], &temperature, sizeof(temperature));
+    memcpy(&buf_dht22[3], &humidity, sizeof(humidity));
+ 
+
+    nullnet_buf = (uint8_t *)&buf_dht22;
+    nullnet_len = sizeof(buf_dht22);
+    NETSTACK_NETWORK.output(NULL); 
+    
+    LOG_DBG("Sending DHT22 data\n");
+}
+
+
 uint8_t datasender( uint8_t id )  
 {
     uint8_t megabuf[9];
@@ -396,8 +436,12 @@ PROCESS_THREAD(poll_process, ev,data){
 
         if(buffer_poll[1] == nodeid)
             {
-                
+            
+            #if COOJA
                 datasender(nodeid);
+            #else
+                m_and_send_dht22();
+            #endif
 
 
                 printf("finished sending\n");
@@ -415,7 +459,6 @@ PROCESS_THREAD(poll_process, ev,data){
                 PROCESS_CONTEXT_BEGIN(&rx_process);
                 beaconrx_f = 0;
                 PROCESS_CONTEXT_END(&rx_process);
-                
             }
             else
             {

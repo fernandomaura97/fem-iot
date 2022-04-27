@@ -113,15 +113,6 @@ void input_callback(const void *data, uint16_t len,
     process_poll(&callback_process);
 }
 
-
-
-
-
-
-
-
-
-
 /*--------------------------------------------------------------------------------*/
 
 PROCESS_THREAD(coordinator_process, ev,data)
@@ -212,6 +203,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
                 PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
                 
                 if(!poll_response_received){
+                    
                     LOG_INFO("polling node %d, no response!! TRYING AGAIN \n", i);
 
                     // HERE, TRY AGAIN? 
@@ -221,8 +213,16 @@ PROCESS_THREAD(coordinator_process, ev,data)
                 etimer_set(&periodic_timer, T_GUARD);
                 PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
                 if(!poll_response_received){
-                    LOG_INFO("ERROR: POLL no RESPONSE!!\n");
-                    lost_message_counter ++;
+
+                    if(i<3){ //if we are in the first 3 nodes, account for error ( ONLY FOR TEST WITH 3 NODES)
+
+                        LOG_INFO("ERROR: POLL no RESPONSE!!\n");
+                        lost_message_counter ++;
+                    }
+                    else{
+                        LOG_INFO("no response(EXPECTED) \n");
+                    }
+                   
                 }
                 poll_response_received = 0;
 
@@ -410,7 +410,10 @@ PROCESS_THREAD( parser_process, ev, data)
             */        
             break;
         } //switch
+    
+        free(parsebuf);
     } //while
+
     PROCESS_END();
 
 }
