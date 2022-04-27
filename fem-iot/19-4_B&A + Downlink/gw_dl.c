@@ -151,8 +151,9 @@ PROCESS_THREAD(coordinator_process, ev,data)
 
     while(1)
     {
+        LOG_DBG("Bitmask is %d\n", bitmask);
         printf("AA0\n"); //NODE-RED HEARTBEAT
-        printf("BM is %d\n", bitmask);
+        printf("LMC,%d",lost_message_counter);
         etimer_set(&beacon_timer, BEACON_INTERVAL); //set the timer for the next interval
         
         static uint8_t i;
