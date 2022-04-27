@@ -84,12 +84,9 @@ const linkaddr_t addr_empty = {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}
 #define f_DATA 0x02
 #define f_ENERGEST 0x03
 
-
 //static uint8_t *buf;
 uint8_t global_buffer[20];
-
 /*---------------------------------------------------------------------------*/
-
 PROCESS(coordinator_process, "fem-iot coordinator process");
 //PROCESS(beacon_process, "beacon process");
 PROCESS(serial_process, "Serial process");
@@ -157,9 +154,8 @@ PROCESS_THREAD(coordinator_process, ev,data)
         etimer_set(&beacon_timer, BEACON_INTERVAL); //set the timer for the next interval
         
         static uint8_t i;
-        //bitmask = 0xFF;                       //CHANGE THIS LATER, WILL FORCE BITMASK TO BE 0xFF
 
-        for (i= 0; i<3; i++)
+        for (i= 0; i<3; i++) 
         {
             beaconbuf[1] = bitmask; 
            
@@ -256,9 +252,6 @@ PROCESS_THREAD(coordinator_process, ev,data)
 }
 
 /*-----------------------------------------------------------------------------------------*/
-
-
-
 
 PROCESS_THREAD( parser_process, ev, data)
 {
@@ -418,7 +411,6 @@ PROCESS_THREAD( parser_process, ev, data)
     PROCESS_END();
 
 }
-
 
 PROCESS_THREAD(association_process,ev,data){
 
@@ -652,9 +644,6 @@ PROCESS_THREAD(callback_process,ev,data){
     } //while      
     PROCESS_END();
 }
-
-
-
 
 PROCESS_THREAD(serial_process, ev, data)
 {
