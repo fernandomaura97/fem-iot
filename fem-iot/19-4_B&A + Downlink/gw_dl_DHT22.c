@@ -20,10 +20,11 @@
 #define LOG_LEVEL LOG_LEVEL_INFO
 
 
-#define NODEID_MGAS1 1
+#define NODEID_STATIC 1
 #define NODEID_DHT22_1 2
-#define NODEID_MGAS2 3
-#define NODEID_DHT22_2 4
+#define NODEID_DHT22_2 3
+#define NODEID_MGAS1 4 ///CUIDADO!!!!
+#define NODEID_MGAS2 4
 #define NODEID_O3_1 5
 #define NODEID_O3_2 6
 #define NODEID_PM10_1 7
@@ -294,7 +295,38 @@ PROCESS_THREAD( parser_process, ev, data)
         //switch(buf[0] & 31){
         switch(parsebuf[0]& 0b00011111) //last 5 bits of the first byte is for NodeID?
         { 
-            case NODEID_MGAS1: //1
+            case NODEID_STATIC: //1
+
+
+            ua2.temp_array[0] = parsebuf[1];
+            ua2.temp_array[1] = parsebuf[2];
+            
+            memcpy(&sensors.temperature, &ua2.u16_var, sizeof(int16_t)); 
+        
+
+            ua2.temp_array[0] = parsebuf[3];
+            ua2.temp_array[1] = parsebuf[4];
+            memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
+        
+            ua.temp_array[0] = parsebuf[5];
+            ua.temp_array[1] = parsebuf[6];
+            ua.temp_array[2] = parsebuf[7];
+            ua.temp_array[3] = parsebuf[8];
+
+            memcpy(&sensors.noise, &ua.u32_var, sizeof(uint32_t));
+
+           
+            printf("{\"nodeID\": %d", parsebuf[0]);
+            printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
+            printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
+            printf(",\"Noise\": %lu", sensors.noise);
+            printf("}\n");
+
+           
+            break;
+
+
+
             case NODEID_MGAS2: //3
                         
             u.temp_array[0] = parsebuf[1];
@@ -519,7 +551,7 @@ PROCESS_THREAD(callback_process,ev,data){
                     //switch(buf[0] & 31){
                     switch(buf[0] & 0b00011111) //last 5 bits of the first byte is for NodeID?
                     {
-                        case NODEID_MGAS1:
+                        //case NODEID_MGAS1:
                         case NODEID_MGAS2:
                                     
                         u.temp_array[0] = buf[1];

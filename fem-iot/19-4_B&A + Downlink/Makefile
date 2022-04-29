@@ -3,6 +3,7 @@ CONTIKI_PROJECT = gw sta
 all: $(CONTIKI_PROJECT)
 
 #MODULES += os/services/shell
+MODULES += os/services/simple-energest
 
 
 CONTIKI_TARGET_SOURCEFILES += dht22.c
