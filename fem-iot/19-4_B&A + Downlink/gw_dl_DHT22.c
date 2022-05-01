@@ -1,10 +1,10 @@
 #include "contiki.h"
 #include "net/netstack.h"
 #include "net/nullnet/nullnet.h"
-
 #include "net/packetbuf.h"
 #include <string.h>
 #include <stdio.h> 
+
 #include "random.h"
 #include "sys/clock.h"
 #include <stdlib.h>
@@ -17,7 +17,7 @@
 
 
 #define LOG_MODULE "App"
-#define LOG_LEVEL LOG_LEVEL_INFO
+#define LOG_LEVEL LOG_LEVEL_NONE
 
 
 #define NODEID_STATIC 1
@@ -485,10 +485,10 @@ PROCESS_THREAD(serial_process, ev, data)
 {
   
   PROCESS_BEGIN();
+  
   uart_set_input(0, serial_line_input_byte);
-  leds_toggle(LEDS_GREEN);
-
   while(1) {
+      
     PROCESS_YIELD();                           // Surt del procés temporalment, fins que arribi un event/poll
     
     if(ev == serial_line_event_message) {      // Si l'event indica que ha arribat un missatge UART
@@ -496,7 +496,6 @@ PROCESS_THREAD(serial_process, ev, data)
       rxdata = data;                           // Guardem el missatge a rxdata
       LOG_DBG("Data received over UART: %s\n", rxdata);    //Mostrem el missatge rebut.
       leds_toggle(LEDS_RED); 
-
       char buffer_header[30];
       strcpy(buffer_header, rxdata);
       LOG_DBG("buffer header: %s\n", buffer_header);
@@ -504,28 +503,24 @@ PROCESS_THREAD(serial_process, ev, data)
       header = strtok(buffer_header, ",");
       LOG_DBG("header: %s\n", header);
 
-
-
-    if (strcmp(header, "BM") == 0) { //If we received a new BM from the GW
-        
-        
-        char *token = strtok(NULL, ",");
-        uint8_t buf_bitmask = 0;
-
-        if(token != NULL) { //only once
+        if (strcmp(header, "BM") == 0) { //If we received a new BM from the GW
             
-            LOG_DBG("token: %s\n", token);
-            buf_bitmask = atoi(token);
-
-            LOG_DBG("bitmask value (serial): %d\n", buf_bitmask);
-            bitmask = buf_bitmask; //store received bitmask for next cycle
             
+            char *token = strtok(NULL, ",");
+            uint8_t buf_bitmask = 0;
 
-        }   
-        else{
-            LOG_ERR("Error parsing bitmask\n");
-        }
-    }    
+            if(token != NULL) { //only once
+
+                LOG_DBG("token: %s\n", token);
+                buf_bitmask = atoi(token);
+
+                LOG_DBG("bitmask value (serial): %d\n", buf_bitmask);
+                bitmask = buf_bitmask; //store received bitmask for next cycle
+            }   
+            else{
+                LOG_ERR("Error parsing bitmask\n");
+            }
+        }    
    }
     
   }
