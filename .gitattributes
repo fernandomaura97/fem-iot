@@ -1,14 +1,14 @@
 # Set the default behavior, in case people don't have core.autocrlf set.
 * text=auto whitespace=trailing-space
-
 # Explicitly declare text files you want to always be normalized and converted
 # to native line endings on checkout.
 *.c text
 *.h text
 *.java text
-
 # Denote all files that are truly binary and should not be modified.
 *.png binary
 *.jpg binary
 *.ihex binary
 *.s37 binary
+help filter=lfs diff=lfs merge=lfs -text
+.git-old/modules/arch/cpu/arm/CMSIS/objects/pack/pack-a254c2f3ec9592414f50b5eb90043ea1ab2edfab.pack filter=lfs diff=lfs merge=lfs -text
