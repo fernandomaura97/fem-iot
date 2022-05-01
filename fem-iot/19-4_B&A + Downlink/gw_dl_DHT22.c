@@ -322,11 +322,11 @@ PROCESS_THREAD(callback_process,ev,data){
         uint8_t temp_array[4];
         } u;
   
-    union{
+  /*  union{
         uint32_t u32_var;
         uint8_t temp_array[4];
         } ua;
-
+*/
     union{
         int16_t u16_var;
         uint8_t temp_array[2];
@@ -410,9 +410,8 @@ PROCESS_THREAD(callback_process,ev,data){
                     
                         printf("{\"nodeID\": %d", buf[0] & 0b00011111);
                         printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
-                        printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
-                        printf("}\n");
-
+                        printf(",\"Temperature\": %d.%d""}\n", sensors.temperature/10, sensors.temperature%10);
+                    
                     
                         break;
                         
