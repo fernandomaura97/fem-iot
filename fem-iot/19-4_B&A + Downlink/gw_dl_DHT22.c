@@ -406,19 +406,11 @@ PROCESS_THREAD(callback_process,ev,data){
                         ua2.temp_array[0] = buf[3];
                         ua2.temp_array[1] = buf[4];
                         memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
-                    
-                        ua.temp_array[0] = buf[5];
-                        ua.temp_array[1] = buf[6];
-                        ua.temp_array[2] = buf[7];
-                        ua.temp_array[3] = buf[8];
-
-                        memcpy(&sensors.noise, &ua.u32_var, sizeof(uint32_t));
 
                     
                         printf("{\"nodeID\": %d", buf[0] & 0b00011111);
                         printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
                         printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
-                        printf(",\"Noise\": %lu", sensors.noise);
                         printf("}\n");
 
                     
