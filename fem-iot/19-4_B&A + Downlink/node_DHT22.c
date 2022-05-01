@@ -435,8 +435,8 @@ PROCESS_THREAD(poll_process, ev,data){
         buffer_poll = packetbuf_dataptr();
         
 
-        LOG_DBG("POLL frame! Received poll for %d, I am node %d\n",buffer_poll[1], nodeid );
-
+        printf("POLL frame!\n");
+        printf("received poll for %d, I am node %d\n", buffer_poll[1], nodeid);
 
         if(buffer_poll[1] == nodeid)
             {
@@ -452,7 +452,7 @@ PROCESS_THREAD(poll_process, ev,data){
                 NETSTACK_RADIO.off();
                 RTIMER_BUSYWAIT(5);
                 time_after_poll = clock_time() - time_of_beacon_rx;
-                printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu\n", T_BEACON - 10*CLOCK_SECOND - time_after_poll/CLOCK_SECOND, clock_time()/CLOCK_SECOND, time_of_beacon_rx/CLOCK_SECOND, time_after_poll/CLOCK_SECOND);
+                printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu", T_BEACON - 10*CLOCK_SECOND - time_after_poll/CLOCK_SECOND, clock_time()/CLOCK_SECOND, time_of_beacon_rx/CLOCK_SECOND, time_after_poll/CLOCK_SECOND);
                 etimer_set(&next_beacon_etimer, T_BEACON - 3*CLOCK_SECOND - time_after_poll);
                 printf("still here\n");
 
@@ -467,14 +467,10 @@ PROCESS_THREAD(poll_process, ev,data){
             else
             {
                 printf("Error: I'm awake in the %d slot and I am %d \n", buffer_poll[1], nodeid);
-
-                //TOO MUCH
-
-                /* NETSTACK_RADIO.off();
+                NETSTACK_RADIO.off();
                 PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&next_beacon_etimer));
                 NETSTACK_RADIO.on();
                 printf("radio back on, beacon in ~2s \n");
-                */
             }
 
   

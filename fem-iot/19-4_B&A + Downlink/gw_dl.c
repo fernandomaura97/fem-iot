@@ -17,7 +17,7 @@
 
 
 #define LOG_MODULE "App"
-#define LOG_LEVEL LOG_LEVEL_DBG
+#define LOG_LEVEL LOG_LEVEL_INFO
 
 
 #define NODEID_MGAS1 1
@@ -63,6 +63,7 @@ static linkaddr_t from;
 
 
 static char *rxdata;
+static uint8_t bitmask;
 
 static uint16_t lost_message_counter = 0;
 static bool poll_response_received = 0; 
@@ -83,12 +84,9 @@ const linkaddr_t addr_empty = {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}
 #define f_DATA 0x02
 #define f_ENERGEST 0x03
 
-
 //static uint8_t *buf;
 uint8_t global_buffer[20];
-
 /*---------------------------------------------------------------------------*/
-
 PROCESS(coordinator_process, "fem-iot coordinator process");
 //PROCESS(beacon_process, "beacon process");
 PROCESS(serial_process, "Serial process");
@@ -112,15 +110,6 @@ void input_callback(const void *data, uint16_t len,
     process_poll(&callback_process);
 }
 
-
-
-
-
-
-
-
-
-
 /*--------------------------------------------------------------------------------*/
 
 PROCESS_THREAD(coordinator_process, ev,data)
@@ -130,7 +119,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
     static struct etimer mm_timer;
     static struct etimer beacon_timer;
 
-    static uint8_t bitmask;
+    
     static uint8_t beaconbuf[3];
 
     static clock_time_t t;
@@ -159,13 +148,14 @@ PROCESS_THREAD(coordinator_process, ev,data)
 
     while(1)
     {
+        LOG_DBG("Bitmask is %d\n", bitmask);
         printf("AA0\n"); //NODE-RED HEARTBEAT
+        printf("LMC,%d",lost_message_counter);
         etimer_set(&beacon_timer, BEACON_INTERVAL); //set the timer for the next interval
         
         static uint8_t i;
-        bitmask = 0xFF;                       //CHANGE THIS LATER, WILL FORCE BITMASK TO BE 0xFF
 
-        for (i= 0; i<3; i++)
+        for (i= 0; i<3; i++) 
         {
             beaconbuf[1] = bitmask; 
            
@@ -210,6 +200,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
                 PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
                 
                 if(!poll_response_received){
+                    
                     LOG_INFO("polling node %d, no response!! TRYING AGAIN \n", i);
 
                     // HERE, TRY AGAIN? 
@@ -219,8 +210,16 @@ PROCESS_THREAD(coordinator_process, ev,data)
                 etimer_set(&periodic_timer, T_GUARD);
                 PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
                 if(!poll_response_received){
-                    LOG_INFO("ERROR: POLL no RESPONSE!!\n");
-                    lost_message_counter ++;
+
+                    if(i<3){ //if we are in the first 3 nodes, account for error ( ONLY FOR TEST WITH 3 NODES)
+
+                        LOG_INFO("ERROR: POLL no RESPONSE!!\n");
+                        lost_message_counter ++;
+                    }
+                    else{
+                        LOG_INFO("no response(EXPECTED) \n");
+                    }
+                   
                 }
                 poll_response_received = 0;
 
@@ -253,9 +252,6 @@ PROCESS_THREAD(coordinator_process, ev,data)
 }
 
 /*-----------------------------------------------------------------------------------------*/
-
-
-
 
 PROCESS_THREAD( parser_process, ev, data)
 {
@@ -297,9 +293,9 @@ PROCESS_THREAD( parser_process, ev, data)
         printf("PARSING\n");
         //switch(buf[0] & 31){
         switch(parsebuf[0]& 0b00011111) //last 5 bits of the first byte is for NodeID?
-        {
-            case NODEID_MGAS1:
-            case NODEID_MGAS2:
+        { 
+            case NODEID_MGAS1: //1
+            case NODEID_MGAS2: //3
                         
             u.temp_array[0] = parsebuf[1];
             u.temp_array[1] = parsebuf[2];
@@ -327,8 +323,8 @@ PROCESS_THREAD( parser_process, ev, data)
 
 
 
-        case NODEID_DHT22_1:
-        case NODEID_DHT22_2:
+        case NODEID_DHT22_1: //2
+        case NODEID_DHT22_2: //4
         
 
             ua2.temp_array[0] = parsebuf[1];
@@ -408,11 +404,13 @@ PROCESS_THREAD( parser_process, ev, data)
             */        
             break;
         } //switch
+    
+        free(parsebuf);
     } //while
+
     PROCESS_END();
 
 }
-
 
 PROCESS_THREAD(association_process,ev,data){
 
@@ -647,9 +645,6 @@ PROCESS_THREAD(callback_process,ev,data){
     PROCESS_END();
 }
 
-
-
-
 PROCESS_THREAD(serial_process, ev, data)
 {
   
@@ -663,9 +658,39 @@ PROCESS_THREAD(serial_process, ev, data)
     if(ev == serial_line_event_message) {      // Si l'event indica que ha arribat un missatge UART
       leds_toggle(LEDS_RED);
       rxdata = data;                           // Guardem el missatge a rxdata
-      printf("Data received over UART: %s\n", rxdata);    //Mostrem el missatge rebut.
+      LOG_DBG("Data received over UART: %s\n", rxdata);    //Mostrem el missatge rebut.
       leds_toggle(LEDS_RED); 
-    }
+
+      char buffer_header[30];
+      strcpy(buffer_header, rxdata);
+      LOG_DBG("buffer header: %s\n", buffer_header);
+      char *header; 
+      header = strtok(buffer_header, ",");
+      LOG_DBG("header: %s\n", header);
+
+
+
+    if (strcmp(header, "BM") == 0) { //If we received a new BM from the GW
+        
+        
+        char *token = strtok(NULL, ",");
+        uint8_t buf_bitmask = 0;
+
+        if(token != NULL) { //only once
+            
+            LOG_DBG("token: %s\n", token);
+            buf_bitmask = atoi(token);
+
+            LOG_DBG("bitmask value (serial): %d\n", buf_bitmask);
+            bitmask = buf_bitmask; //store received bitmask for next cycle
+            
+
+        }   
+        else{
+            LOG_ERR("Error parsing bitmask\n");
+        }
+    }    
+   }
     
   }
 

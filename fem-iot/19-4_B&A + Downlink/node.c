@@ -14,7 +14,7 @@
 #define LOG_LEVEL LOG_LEVEL_DBG
 
 #define DEBUG 1
-#define COOJA 1
+#define COOJA 0
 
 #if DEBUG
 
@@ -44,7 +44,7 @@
 #define NODEID7 64
 #define NODEID8 128
 
-#define NODEID NODEID5
+#define NODEID NODEID3
 
 
 #define T_MDB  (10 * CLOCK_SECOND)
@@ -133,77 +133,7 @@ uint8_t datasender( uint8_t id )
 
     nullnet_buf = (uint8_t *)&megabuf;
     nullnet_len = sizeof(megabuf);   
-         
-    /*switch(id) {
-        
-        case 1:
-        case 3:
-            printf("Node %d, multigas\n", id);
 
-            //megabuf[0] = id;
-            megabuf[0] = 0b10000000 | id;
-            memcpy(&megabuf[1], &mydata.co, sizeof(mydata.co));
-            memcpy(&megabuf[5], &mydata.no2, sizeof(mydata.no2));
-            printf("Sending %d %d %d %d %d %d %d %d %d\n", megabuf[0], megabuf[1], megabuf[2], megabuf[3], megabuf[4], megabuf[5], megabuf[6], megabuf[7], megabuf[8]);
-
-            //make sure it's correct data
-            nullnet_buf = (uint8_t *)&megabuf;
-            nullnet_len = sizeof(megabuf);
-            NETSTACK_NETWORK.output(NULL); 
-            break;
-        case 2:
-        case 4: 
-            printf("Node %d\n, dht22", id);
-
-            megabuf[0] = id;
-            memcpy(&megabuf[1], &mydata.temperature, sizeof(mydata.temperature));
-            memcpy(&megabuf[3], &mydata.hum, sizeof(mydata.hum));
-            memcpy(&megabuf[5], &mydata.noise, sizeof(mydata.noise));
-
-            nullnet_buf = (uint8_t *)&megabuf;
-            nullnet_len = sizeof(megabuf);
-            NETSTACK_NETWORK.output(NULL); 
-            break;
-        case 5:
-        case 6:
-          printf("Node %d\n, Ozone\n", id);
-          union {
-            float float_variable;
-            uint8_t temp_array[4];
-          } u;
-
-          u.float_variable = mydata.o3;
-
-          megabuf[5] = u.temp_array[0];
-          megabuf[6] = u.temp_array[1];
-          megabuf[7] = u.temp_array[2];
-          megabuf[8] = u.temp_array[3];
-          megabuf[0] = id;
-
-          memcpy(&megabuf[1], &mydata.temperature, sizeof(mydata.temperature));
-          memcpy(&megabuf[3], &mydata.hum, sizeof(mydata.hum));
-
-          nullnet_buf = (uint8_t *)&megabuf;
-          nullnet_len = sizeof(megabuf);
-          NETSTACK_NETWORK.output(NULL); 
-          break;
-        case 7:
-        case 8:
-            printf("Node %d, PM10\n", id);
-
-            megabuf[0] = id;
-            memcpy(&megabuf[1], &mydata.pm10, sizeof(mydata.pm10));
-
-            nullnet_buf = (uint8_t *)&megabuf;
-            nullnet_len = sizeof(megabuf);
-            NETSTACK_NETWORK.output(NULL); 
-                  
-            break;
-        default:
-            printf("?");
-          
-            break;
-    }*/
     if(id == 1 || id ==3){
         printf("Node %d, multigas\n", id);
 
@@ -474,16 +404,10 @@ PROCESS_THREAD(poll_process, ev,data){
                 NETSTACK_RADIO.off();
                 RTIMER_BUSYWAIT(5);
                 time_after_poll = clock_time() - time_of_beacon_rx;
-                printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu", 350 - time_after_poll/CLOCK_SECOND, clock_time()/CLOCK_SECOND, time_of_beacon_rx/CLOCK_SECOND, time_after_poll/CLOCK_SECOND);
-                etimer_set(&next_beacon_etimer, 357*CLOCK_SECOND - time_after_poll);
+                printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu", T_BEACON - 10*CLOCK_SECOND - time_after_poll/CLOCK_SECOND, clock_time()/CLOCK_SECOND, time_of_beacon_rx/CLOCK_SECOND, time_after_poll/CLOCK_SECOND);
+                etimer_set(&next_beacon_etimer, T_BEACON - 3*CLOCK_SECOND - time_after_poll);
                 printf("still here\n");
-    /*--------------------------------------------------------------------------------------------------------------------*/
-                         
-                
-                //printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu", 350*CLOCK_SECOND - time_after_poll, clock_time(), time_of_beacon_rx, time_after_poll);
-                //etimer_set(&next_beacon_etimer, CLOCK_SECOND * 2);
 
-    /*--------------------------------------------------------------------------------------------------------------------*/
 
                 PROCESS_WAIT_UNTIL(etimer_expired(&next_beacon_etimer));
                 NETSTACK_RADIO.on();
@@ -517,15 +441,13 @@ PROCESS_THREAD(associator_process, ev,data){
     while(1){
 
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL); //wait until beacon 
-        //clock_time_t timebuf = 357*CLOCK_SECOND;
-        //printf("setting timer for %lu ticks, %lu seconds (+3) until beacon\n", timebuf, timebuf/CLOCK_SECOND);
+    
         time_of_beacon_rx = clock_time();
-        //etimer_set(&next_beacon_etimer, (357*CLOCK_SECOND)); //use rtimer maybe?
        
 
         time_until_poll = (T_MDB + ((nodeid - 1) * (T_SLOT + T_GUARD))) - T_GUARD;
         printf("time until poll is %lu\n", time_until_poll/CLOCK_SECOND);
-        //printf("radio off, time until radio on: %lu ticks, %lu seconds\n", time_until_poll ,time_until_poll/CLOCK_SECOND);
+
         etimer_set(&radiotimer, time_until_poll);
         
         if(!is_associated)
@@ -542,15 +464,15 @@ PROCESS_THREAD(associator_process, ev,data){
             for (i_pwr = 0; i_pwr < 3; i_pwr++){
                
 
-                etimer_set(&asotimer, 2* CLOCK_SECOND + (random_rand() % (CLOCK_SECOND)));
+                etimer_set(&asotimer, 2* CLOCK_SECOND + (random_rand() % (CLOCK_SECOND)));   //add some jitter/randomness for the transmission   
                 
                 NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, power_levels[i_pwr]);
                 
                 
-                //add some jitter   
-                
                 PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&asotimer));
-                 if(is_associated ==1 ){break;}
+                 
+                if(is_associated ==1 ){break;}
+
                 printf("Sending assoc. Request, tx power: %02x\n", power_levels[i_pwr]);
                 NETSTACK_NETWORK.output(&coordinator_addr);
                 
