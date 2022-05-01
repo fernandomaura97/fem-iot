@@ -1,4 +1,4 @@
-CONTIKI_PROJECT = gw sta
+CONTIKI_PROJECT = gw_dl_DHT22 node_DHT22 node_DHT22_static
 
 all: $(CONTIKI_PROJECT)
 
