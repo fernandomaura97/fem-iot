@@ -17,7 +17,7 @@
 
 
 #define LOG_MODULE "App"
-#define LOG_LEVEL LOG_LEVEL_INFO
+#define LOG_LEVEL LOG_LEVEL_DBG
 
 
 #define NODEID_STATIC 1
@@ -494,15 +494,15 @@ PROCESS_THREAD(serial_process, ev, data)
     if(ev == serial_line_event_message) {      // Si l'event indica que ha arribat un missatge UART
       leds_toggle(LEDS_RED);
       rxdata = data;                           // Guardem el missatge a rxdata
-      LOG_DBG("Data received over UART: %s\n", rxdata);    //Mostrem el missatge rebut.
+      printf("Data received over UART: %s\n", rxdata);    //Mostrem el missatge rebut.
       leds_toggle(LEDS_RED); 
 
       char buffer_header[30];
       strcpy(buffer_header, rxdata);
-      LOG_DBG("buffer header: %s\n", buffer_header);
+      printf("buffer header: %s\n", buffer_header);
       char *header; 
       header = strtok(buffer_header, ",");
-      LOG_DBG("header: %s\n", header);
+      printf("header: %s\n", header);
 
 
 
