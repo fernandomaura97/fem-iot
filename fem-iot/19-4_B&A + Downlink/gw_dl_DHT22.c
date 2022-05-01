@@ -151,7 +151,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
     {
         LOG_DBG("Bitmask is %d\n", bitmask);
         printf("AA0\n"); //NODE-RED HEARTBEAT
-        printf("LMC,%d",lost_message_counter);
+        printf("LMC,%d\n",lost_message_counter);
         etimer_set(&beacon_timer, BEACON_INTERVAL); //set the timer for the next interval
         
         static uint8_t i;
@@ -265,11 +265,11 @@ PROCESS_THREAD( parser_process, ev, data)
         uint8_t temp_array[4];
         } u;
   
-    union{
+    /*union{
         uint32_t u32_var;
         uint8_t temp_array[4];
         } ua;
-
+*/
     union{
         int16_t u16_var;
         uint8_t temp_array[2];
@@ -307,19 +307,18 @@ PROCESS_THREAD( parser_process, ev, data)
             ua2.temp_array[0] = parsebuf[3];
             ua2.temp_array[1] = parsebuf[4];
             memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
-        
+        /*
             ua.temp_array[0] = parsebuf[5];
             ua.temp_array[1] = parsebuf[6];
             ua.temp_array[2] = parsebuf[7];
             ua.temp_array[3] = parsebuf[8];
 
             memcpy(&sensors.noise, &ua.u32_var, sizeof(uint32_t));
-
+        */
            
             printf("{\"nodeID\": %d", parsebuf[0]);
             printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
             printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
-            printf(",\"Noise\": %lu", sensors.noise);
             printf("}\n");
 
            
@@ -368,19 +367,17 @@ PROCESS_THREAD( parser_process, ev, data)
             ua2.temp_array[0] = parsebuf[3];
             ua2.temp_array[1] = parsebuf[4];
             memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
-        
+        /*
             ua.temp_array[0] = parsebuf[5];
             ua.temp_array[1] = parsebuf[6];
             ua.temp_array[2] = parsebuf[7];
             ua.temp_array[3] = parsebuf[8];
-
             memcpy(&sensors.noise, &ua.u32_var, sizeof(uint32_t));
-
-           
+            */
+           printf("AIUDAME") ;
             printf("{\"nodeID\": %d", parsebuf[0]);
             printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
             printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
-            printf(",\"Noise\": %lu", sensors.noise);
             printf("}\n");
 
            
