@@ -1,0 +1,12 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	worktree = ../../../../../../../arch/cpu/cc26x0-cc13x0/lib/cc2640r2-sdk
+[remote "origin"]
+	url = https://github.com/contiki-ng/cc2640r2-sdk.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master

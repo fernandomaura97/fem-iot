@@ -1,0 +1,46 @@
+0000000000000000000000000000000000000000 999b0d85f28c8f70b843542e216d6d62084e8563 PradeepKumar <pradeepkumar@ubuntu.(none)> 1638875924 +0100	clone: from https://github.com/contiki-ng/contiki-ng.git
+999b0d85f28c8f70b843542e216d6d62084e8563 38ab13389bba967ee0347f5dc2c56a0bdad02efe PradeepKumar <fernandomaurarivero@gmail.com> 1642763517 +0100	commit: eiii, hola
+38ab13389bba967ee0347f5dc2c56a0bdad02efe 0000000000000000000000000000000000000000 PradeepKumar <fernandomaurarivero@gmail.com> 1642763895 +0100	Branch: renamed refs/heads/develop to refs/heads/main
+0000000000000000000000000000000000000000 38ab13389bba967ee0347f5dc2c56a0bdad02efe PradeepKumar <fernandomaurarivero@gmail.com> 1642763895 +0100	Branch: renamed refs/heads/develop to refs/heads/main
+38ab13389bba967ee0347f5dc2c56a0bdad02efe b8fc052078a80101d10c5ef75d9e7dd0e1443e17 PradeepKumar <fernandomaurarivero@gmail.com> 1642765243 +0100	pull: Fast-forward
+b8fc052078a80101d10c5ef75d9e7dd0e1443e17 a2d835c5b17ca5f38f039e336787050df6429ebb PradeepKumar <fernandomaurarivero@gmail.com> 1642867376 +0100	pull: Fast-forward
+a2d835c5b17ca5f38f039e336787050df6429ebb 312f88892f6bac7d67624fa8aad4ba9f99185530 PradeepKumar <fernandomaurarivero@gmail.com> 1642867602 +0100	pull: Fast-forward
+312f88892f6bac7d67624fa8aad4ba9f99185530 c35f25ad59cbd1a431b1c440755ec4ee7dcf9c3e PradeepKumar <fernandomaurarivero@gmail.com> 1642939453 +0100	commit: everything working fineee
+c35f25ad59cbd1a431b1c440755ec4ee7dcf9c3e 6916638a94c6a4b91c4f700d9bbab4f5f3a65f12 PradeepKumar <fernandomaurarivero@gmail.com> 1643021243 +0100	commit: added dataset files
+6916638a94c6a4b91c4f700d9bbab4f5f3a65f12 20129c909e77b583a450466fe1294124afc0538c PradeepKumar <fernandomaurarivero@gmail.com> 1643021750 +0100	commit: removed trash
+20129c909e77b583a450466fe1294124afc0538c c6bd91ada04d0ff7693a32ea096b191c34f9365b PradeepKumar <fernandomaurarivero@gmail.com> 1643055580 +0100	commit: final del dia
+c6bd91ada04d0ff7693a32ea096b191c34f9365b 7082a06b1395046592f5ef626b1abf9c9273c86c PradeepKumar <fernandomaurarivero@gmail.com> 1643105678 +0100	commit: fix dht22 on bugfixes
+7082a06b1395046592f5ef626b1abf9c9273c86c e59aa9b7509e0546b01d8631be0d163a0bd9d9a5 PradeepKumar <fernandomaurarivero@gmail.com> 1643115098 +0100	commit: non-blocking loop for average noise
+e59aa9b7509e0546b01d8631be0d163a0bd9d9a5 6267a8d5bebc9dab777c996f57384ff0e15aa943 PradeepKumar <fernandomaurarivero@gmail.com> 1643121041 +0100	pull: Fast-forward
+6267a8d5bebc9dab777c996f57384ff0e15aa943 a45f6b26333189baaa315eee6157a76b00b452f2 PradeepKumar <fernandomaurarivero@gmail.com> 1643121304 +0100	commit: broke stuff
+a45f6b26333189baaa315eee6157a76b00b452f2 4e367de12972a36a4a74e4f17c57f66db49cb354 PradeepKumar <fernandomaurarivero@gmail.com> 1643122629 +0100	commit: im dumb, fixed mgas
+4e367de12972a36a4a74e4f17c57f66db49cb354 51c0fc629f068e8f61581848a139516864524c0b PradeepKumar <fernandomaurarivero@gmail.com> 1643200210 +0100	commit: CC1200 sniffer working!
+51c0fc629f068e8f61581848a139516864524c0b 4e367de12972a36a4a74e4f17c57f66db49cb354 PradeepKumar <fernandomaurarivero@gmail.com> 1643311985 +0100	reset: moving to HEAD~1
+4e367de12972a36a4a74e4f17c57f66db49cb354 a7f96e6c740e28050f4deef37fd7e8cb29a768da PradeepKumar <fernandomaurarivero@gmail.com> 1643312027 +0100	commit: added samplerate option!
+a7f96e6c740e28050f4deef37fd7e8cb29a768da 45db0bcabd167e06a015a9d31b0e8a2e963d515b PradeepKumar <fernandomaurarivero@gmail.com> 1643377172 +0100	commit: boxes nullnet 868 add
+45db0bcabd167e06a015a9d31b0e8a2e963d515b f0658b9b57e11d8f0cbf36aa772c270b6ae86be9 PradeepKumar <fernandomaurarivero@gmail.com> 1643970692 +0100	commit: added NN_GW: dht22 validated, pm10 validated
+f0658b9b57e11d8f0cbf36aa772c270b6ae86be9 79ac0f604e698e45b85d660a53cdbda6dd56ec7c PradeepKumar <fernandomaurarivero@gmail.com> 1643982312 +0100	commit: all works
+79ac0f604e698e45b85d660a53cdbda6dd56ec7c f85ea9c9666cd8f80047bab05d92992e352d1fee PradeepKumar <fernandomaurarivero@gmail.com> 1644406295 +0100	commit: good nullnet, fixed adcs
+f85ea9c9666cd8f80047bab05d92992e352d1fee 0ebe1b14f1053202c3ed6ceb64ec41bd4c3843f0 PradeepKumar <fernandomaurarivero@gmail.com> 1644406379 +0100	pull: Merge made by the 'recursive' strategy.
+0ebe1b14f1053202c3ed6ceb64ec41bd4c3843f0 d3542e1b3a342bc0e508bfc1eef5daeca4d3eb2d PradeepKumar <fernandomaurarivero@gmail.com> 1644579921 +0100	commit: changing to unicast
+d3542e1b3a342bc0e508bfc1eef5daeca4d3eb2d e8ce35138dbfcebe1588cf79e05bd67908c4c2f0 PradeepKumar <fernandomaurarivero@gmail.com> 1645097181 +0100	commit: 15-2
+e8ce35138dbfcebe1588cf79e05bd67908c4c2f0 115e48cafaeecbb9afc80e7f43c9616b9b6cc874 PradeepKumar <fernandomaurarivero@gmail.com> 1645357795 +0100	commit: beacons 15-2 GW done
+115e48cafaeecbb9afc80e7f43c9616b9b6cc874 3e8bde599782d9e9a60793752f49fe718b83c1c8 PradeepKumar <fernandomaurarivero@gmail.com> 1645362375 +0100	commit: Beacons working on cooja
+3e8bde599782d9e9a60793752f49fe718b83c1c8 c95cc320032b5b7d25eaf0e63280589e8a3bff11 PradeepKumar <fernandomaurarivero@gmail.com> 1645444367 +0100	commit: beacons working with motes
+c95cc320032b5b7d25eaf0e63280589e8a3bff11 cfd8ba20724caf15905ddda885716386329bf841 PradeepKumar <fernandomaurarivero@gmail.com> 1645728876 +0100	commit: coojeandola bien
+cfd8ba20724caf15905ddda885716386329bf841 738f6c0ca28f7355276630541cd225e0c4ddd54c PradeepKumar <fernandomaurarivero@gmail.com> 1645787865 +0100	commit: hare-a prototype working on re-motes (bug: Delay on "NETSTACK_RADIO.off()" )
+738f6c0ca28f7355276630541cd225e0c4ddd54c 6c5197259ac65700325d7b0fa0fe202b968ba275 PradeepKumar <fernandomaurarivero@gmail.com> 1645804239 +0100	commit: its fridayyyaysyaya__v1.5 hare-A
+6c5197259ac65700325d7b0fa0fe202b968ba275 89cd1629d18fb3794811ac1fe777405d7b965d82 PradeepKumar <fernandomaurarivero@gmail.com> 1646048028 +0100	commit: might have broken timings
+89cd1629d18fb3794811ac1fe777405d7b965d82 1ee648fa9274805af04a3f0131a38ac66114dbfb PradeepKumar <fernandomaurarivero@gmail.com> 1646129718 +0100	commit: cooja ok, before energest things
+1ee648fa9274805af04a3f0131a38ac66114dbfb 9228665b4d6db6c332841b45fcb9c41e99e17916 PradeepKumar <fernandomaurarivero@gmail.com> 1646133913 +0100	commit: no energest, all fine
+9228665b4d6db6c332841b45fcb9c41e99e17916 16e764da3949c6319fa32e301694d0349f093a01 PradeepKumar <fernandomaurarivero@gmail.com> 1646147761 +0100	commit: test on re-motes
+16e764da3949c6319fa32e301694d0349f093a01 e9db2d53fc7647e099eaf2af165a5f56019abc38 PradeepKumar <fernandomaurarivero@gmail.com> 1646322188 +0100	commit: test desastroso dual band, added association
+e9db2d53fc7647e099eaf2af165a5f56019abc38 974fb3ee2c738bb39d138160326bdac269ace71a PradeepKumar <fernandomaurarivero@gmail.com> 1646747920 +0100	commit: association good for 1 node
+974fb3ee2c738bb39d138160326bdac269ace71a ed0c7263d7af2d2333b36ef6465b0325d94ed9ae PradeepKumar <fernandomaurarivero@gmail.com> 1646825435 +0100	commit: broke stuff
+ed0c7263d7af2d2333b36ef6465b0325d94ed9ae 781f4d4acaf786725c3f25f4639b1b2e9f3529ea PradeepKumar <fernandomaurarivero@gmail.com> 1646833309 +0100	commit: association v1.0: working on cooja
+781f4d4acaf786725c3f25f4639b1b2e9f3529ea 7d0da6611feb59eae26db148f554b8fa66c26650 PradeepKumar <fernandomaurarivero@gmail.com> 1646835275 +0100	commit: association v1.1: unicast association request
+7d0da6611feb59eae26db148f554b8fa66c26650 000a2ecbb6073324dd88712bd65563af7ea3dfff PradeepKumar <fernandomaurarivero@gmail.com> 1646911479 +0100	commit: association tested and working on Re-Motes
+000a2ecbb6073324dd88712bd65563af7ea3dfff d19ba2426db756a84791adb8d9cced4239c274d0 PradeepKumar <fernandomaurarivero@gmail.com> 1646923529 +0100	commit: Added beacon Coordinator program+association
+d19ba2426db756a84791adb8d9cced4239c274d0 7b68bb88229fe734aa954b576193635199ea2583 PradeepKumar <fernandomaurarivero@gmail.com> 1646925159 +0100	commit: TODO: STA(sensors+Association)
+7b68bb88229fe734aa954b576193635199ea2583 c01b104c15229b7e967924aa30cf9375f85fe52e PradeepKumar <fernandomaurarivero@gmail.com> 1647170632 +0100	commit: trying stuff, might break
+                                                                                                                                                            

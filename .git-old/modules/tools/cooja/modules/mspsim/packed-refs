@@ -1,0 +1,4 @@
+# pack-refs with: peeled fully-peeled sorted 
+4e48946494a2e28cb438a9b3b2fddec4545565c5 refs/remotes/origin/master
+0bbd934cf7dd9016bbdcc996f2f03aa57829c766 refs/remotes/origin/simonduq-patch-1
+47daffd8ffee4cd70ca237ead1e2b136d3f743b5 refs/remotes/origin/simonduq-patch-2

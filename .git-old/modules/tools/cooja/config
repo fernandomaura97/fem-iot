@@ -1,0 +1,15 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	worktree = ../../../../tools/cooja
+[remote "origin"]
+	url = https://github.com/contiki-ng/cooja.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master
+[submodule "mspsim"]
+	active = true
+	url = https://github.com/contiki-ng/mspsim.git

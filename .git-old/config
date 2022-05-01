@@ -1,0 +1,51 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[branch "main"]
+[submodule "arch/cpu/arm/CMSIS"]
+	active = true
+	url = https://github.com/ARM-software/CMSIS_5.git
+[submodule "arch/cpu/cc26xx-cc13xx/lib/cc13xxware"]
+	active = true
+	url = https://github.com/contiki-ng/cc13xxware.git
+[submodule "arch/cpu/cc26xx-cc13xx/lib/cc2640r2-sdk"]
+	active = true
+	url = https://github.com/contiki-ng/cc2640r2-sdk.git
+[submodule "arch/cpu/cc26xx-cc13xx/lib/cc26xxware"]
+	active = true
+	url = https://github.com/contiki-ng/cc26xxware.git
+[submodule "arch/cpu/nrf/lib/nrfx"]
+	active = true
+	url = https://github.com/NordicSemiconductor/nrfx.git
+[submodule "arch/cpu/nrf52840/lib/nrf52-sdk"]
+	active = true
+	url = https://github.com/contiki-ng/nrf-sdk-contiki-ng.git
+[submodule "arch/cpu/simplelink-cc13xx-cc26xx/lib/coresdk_cc13xx_cc26xx"]
+	active = true
+	url = https://github.com/contiki-ng/coresdk_cc13xx_cc26xx.git
+[submodule "os/net/security/tinydtls"]
+	active = true
+	url = https://github.com/contiki-ng/tinydtls.git
+[submodule "tests/18-coap-lwm2m/example-lwm2m-standalone"]
+	active = true
+	url = https://github.com/contiki-ng/example-lwm2m-standalone.git
+[submodule "tools/cc2538-bsl"]
+	active = true
+	url = https://github.com/JelmerT/cc2538-bsl.git
+[submodule "tools/cooja"]
+	active = true
+	url = https://github.com/contiki-ng/cooja.git
+[submodule "tools/motelist"]
+	active = true
+	url = https://github.com/contiki-ng/motelist
+[submodule "tools/sensniff"]
+	active = true
+	url = https://github.com/g-oikonomou/sensniff.git
+[remote "origin"]
+	url = https://github.com/fernandomaura97/fem-iot.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "main"]
+	remote = origin
+	merge = refs/heads/main

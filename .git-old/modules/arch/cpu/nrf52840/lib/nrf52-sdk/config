@@ -1,0 +1,12 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	worktree = ../../../../../../../arch/cpu/nrf52840/lib/nrf52-sdk
+[remote "origin"]
+	url = https://github.com/contiki-ng/nrf-sdk-contiki-ng.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master
