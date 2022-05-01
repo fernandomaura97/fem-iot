@@ -91,11 +91,11 @@ uint8_t global_buffer[20];
 PROCESS(coordinator_process, "fem-iot coordinator process");
 //PROCESS(beacon_process, "beacon process");
 PROCESS(serial_process, "Serial process");
-PROCESS(parser_process, "Parsing process");
+//PROCESS(parser_process, "Parsing process");
 PROCESS(association_process, "Association process");
 PROCESS(callback_process,"Callback process");
 
-AUTOSTART_PROCESSES(&coordinator_process, &parser_process, &association_process, &callback_process, &serial_process);
+AUTOSTART_PROCESSES(&coordinator_process, &association_process, &callback_process, &serial_process);
 
 /*---------------------------------------------------------------------------*/
 
@@ -254,192 +254,8 @@ PROCESS_THREAD(coordinator_process, ev,data)
 
 /*-----------------------------------------------------------------------------------------*/
 
-PROCESS_THREAD( parser_process, ev, data)
-{
-    PROCESS_BEGIN();
 
 
-    uint32_t fbuf; //float buffer
-    union {
-        float float_variable;
-        uint8_t temp_array[4];
-        } u;
-  
-    /*union{
-        uint32_t u32_var;
-        uint8_t temp_array[4];
-        } ua;
-*/
-    union{
-        int16_t u16_var;
-        uint8_t temp_array[2];
-        } ua2;
-
-
-    //variables
-    while(1){
-
-        PROCESS_YIELD();
-
-        PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-
-        uint8_t *parsebuf = malloc(cb_len);
-        parsebuf = packetbuf_dataptr(); //THIS NEEDS TO BE TESTED
-        /* 
-        Alternatives:
-            memcpy(parsebuf,data,len); //Do this on the callback
-
-
-        */
-        printf("PARSING\n");
-        //switch(buf[0] & 31){
-        switch(parsebuf[0]& 0b00011111) //last 5 bits of the first byte is for NodeID?
-        { 
-            case NODEID_STATIC: //1
-
-
-            ua2.temp_array[0] = parsebuf[1];
-            ua2.temp_array[1] = parsebuf[2];
-            
-            memcpy(&sensors.temperature, &ua2.u16_var, sizeof(int16_t)); 
-        
-
-            ua2.temp_array[0] = parsebuf[3];
-            ua2.temp_array[1] = parsebuf[4];
-            memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
-        /*
-            ua.temp_array[0] = parsebuf[5];
-            ua.temp_array[1] = parsebuf[6];
-            ua.temp_array[2] = parsebuf[7];
-            ua.temp_array[3] = parsebuf[8];
-
-            memcpy(&sensors.noise, &ua.u32_var, sizeof(uint32_t));
-        */
-           
-            printf("{\"nodeID\": %d", parsebuf[0]);
-            printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
-            printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
-            printf("}\n");
-
-           
-            break;
-
-
-
-            case NODEID_MGAS2: //3
-                        
-            u.temp_array[0] = parsebuf[1];
-            u.temp_array[1] = parsebuf[2];
-            u.temp_array[2] = parsebuf[3];
-            u.temp_array[3] = parsebuf[4];
-            sensors.co = u.float_variable;
-           
-
-            u.temp_array[0] = parsebuf[5];
-            u.temp_array[1] = parsebuf[6];
-            u.temp_array[2] = parsebuf[7];
-            u.temp_array[3] = parsebuf[8];
-            sensors.no2 = u.float_variable;
-
-
-            printf("{\"nodeID\": %d", parsebuf[0]);
-            printf(",\"co\": ");
-            fbuf = sensors.co * 100;
-            printf("%lu.%02lu", fbuf/100, fbuf%100);
-            printf(", \"no2\": ");
-            fbuf = sensors.no2 * 100;
-            printf("%lu.%02lu", fbuf/100, fbuf%100);
-            printf("}\n");    
-            break;
-
-
-
-        case NODEID_DHT22_1: //2
-        case NODEID_DHT22_2: //4
-        
-
-            ua2.temp_array[0] = parsebuf[1];
-            ua2.temp_array[1] = parsebuf[2];
-            
-            memcpy(&sensors.temperature, &ua2.u16_var, sizeof(int16_t)); 
-        
-
-            ua2.temp_array[0] = parsebuf[3];
-            ua2.temp_array[1] = parsebuf[4];
-            memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
-        /*
-            ua.temp_array[0] = parsebuf[5];
-            ua.temp_array[1] = parsebuf[6];
-            ua.temp_array[2] = parsebuf[7];
-            ua.temp_array[3] = parsebuf[8];
-            memcpy(&sensors.noise, &ua.u32_var, sizeof(uint32_t));
-            */
-           printf("AIUDAME") ;
-            printf("{\"nodeID\": %d", parsebuf[0]);
-            printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
-            printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
-            printf("}\n");
-
-           
-            break;
-            
-        case NODEID_O3_1:
-        case NODEID_O3_2:
-            
-            ua2.temp_array[0] = parsebuf[1];
-            ua2.temp_array[1] = parsebuf[2];
-            
-            memcpy(&sensors.temperature, &ua2.u16_var, sizeof(int16_t)); 
-        
-
-            ua2.temp_array[0] = parsebuf[3];
-            ua2.temp_array[1] = parsebuf[4];
-            memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
-
-            u.temp_array[0] = parsebuf[5];
-            u.temp_array[1] = parsebuf[6];
-            u.temp_array[2] = parsebuf[7];
-            u.temp_array[3] = parsebuf[8];
-            
-           
-            memcpy(&sensors.o3, &u.float_variable, sizeof(float));
-            fbuf = sensors.o3 * 100;
-            
-
-
-            printf("{\"nodeID\": %d", parsebuf[0]);
-            printf(",\"ppm\": ");
-            printf("%lu.%02lu", fbuf/100, fbuf%100);
-           
-            printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
-            printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
-            printf("}\n");
-            break;
-        case NODEID_PM10_1:
-        case NODEID_PM10_2:
-           
-            sensors.pm10 = (parsebuf[2] << 8) | parsebuf[1];
-            printf("{\"nodeID\": %d", parsebuf[0]);
-            printf(",\"pm10\": %d", sensors.pm10);
-            printf("}\n");
-            break;
-            //AOK!!
-        
-        default:
-            /*printf("unknown nodeID %d\n", parsebuf[0]);
-            printf("BYTES copied are: ");
-            for (int i = 0; i < len; i++) {
-            printf("%d ", parsebuf[i]);
-            */        
-            break;
-        } //switch
-    
-        free(parsebuf);
-    } //while
-
-    PROCESS_END();
-
-}
 
 PROCESS_THREAD(association_process,ev,data){
 
