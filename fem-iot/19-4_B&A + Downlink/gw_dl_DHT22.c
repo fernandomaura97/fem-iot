@@ -411,8 +411,8 @@ PROCESS_THREAD(callback_process,ev,data){
 
                     
                         printf("{\"nodeID\": %d", buf[0] & 0b00011111);
-                        printf(",\"Humidity%d\": %d.%d",  buf[0] & 0b00011111, sensors.humidity/10, sensors.humidity%10);
-                        printf(",\"Temperature%d\": %d.%d""}\n", buf[0] & 0b00011111, sensors.temperature/10, sensors.temperature%10);
+                        printf(",\"Humidity\": %d.%d",  sensors.humidity/10, sensors.humidity%10);
+                        printf(",\"Temperature\": %d.%d""}\n",  sensors.temperature/10, sensors.temperature%10);
                     
                     
                         break;
