@@ -126,7 +126,7 @@ uint8_t get_nodeid(uint8_t id)
     return 0;
 }
 
-void m_and_send_dht22()
+void m_and_send_dht22(uint8_t id)
 {
     uint8_t buf_dht22[5];
     int16_t temperature, humidity;
@@ -149,7 +149,7 @@ void m_and_send_dht22()
     }
     
     
-    buf_dht22[0] = 0b10000000 | 2;
+    buf_dht22[0] = 0b10000000 | id;
     memcpy(&buf_dht22[1], &temperature, sizeof(temperature));
     memcpy(&buf_dht22[3], &humidity, sizeof(humidity));
  
@@ -444,7 +444,7 @@ PROCESS_THREAD(poll_process, ev,data){
             #if COOJA
                 datasender(nodeid);
             #else
-                m_and_send_dht22();
+                m_and_send_dht22(nodeid);
             #endif
 
 

@@ -215,7 +215,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
                     if(i<3){ //if we are in the first 3 nodes, account for error ( ONLY FOR TEST WITH 3 NODES)
 
                         LOG_INFO("ERROR: POLL no RESPONSE!!\n");
-                        lost_message_counter ++;
+                        lost_message_counter++;
                     }
                     else{
                         LOG_INFO("no response(EXPECTED) \n");
@@ -363,7 +363,9 @@ PROCESS_THREAD(callback_process,ev,data){
                     printf("PARSING\n");
                     //switch(buf[0] & 31){
                     switch(buf[0] & 0b00011111) //last 5 bits of the first byte is for NodeID?
-                    {
+                    {   
+
+                                               
                         //case NODEID_MGAS1:
                         case NODEID_MGAS2:
                                     
@@ -392,7 +394,7 @@ PROCESS_THREAD(callback_process,ev,data){
                         break;
 
 
-
+                    case NODEID_STATIC:
                     case NODEID_DHT22_1:
                     case NODEID_DHT22_2:
                     
@@ -409,8 +411,8 @@ PROCESS_THREAD(callback_process,ev,data){
 
                     
                         printf("{\"nodeID\": %d", buf[0] & 0b00011111);
-                        printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
-                        printf(",\"Temperature\": %d.%d""}\n", sensors.temperature/10, sensors.temperature%10);
+                        printf(",\"Humidity%d\": %d.%d",  buf[0] & 0b00011111, sensors.humidity/10, sensors.humidity%10);
+                        printf(",\"Temperature%d\": %d.%d""}\n", buf[0] & 0b00011111, sensors.temperature/10, sensors.temperature%10);
                     
                     
                         break;

@@ -9,6 +9,9 @@
 #include <stdlib.h>
 #include "net/packetbuf.h"
 
+//#include "sys/energest.h"
+
+
 /* Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "App"
@@ -123,7 +126,7 @@ uint8_t get_nodeid(uint8_t id)
     return 0;
 }
 
-void m_and_send_dht22()
+void m_and_send_dht22(uint8_t id)
 {
     uint8_t buf_dht22[5];
     int16_t temperature, humidity;
@@ -145,9 +148,8 @@ void m_and_send_dht22()
         LOG_ERR("FAILED TO READ DHT22\n");
     }
     
-    SENSORS_DEACTIVATE(dht22);
-
-    buf_dht22[0] = 0b10000000 | 2;
+    
+    buf_dht22[0] = 0b10000000 | id;
     memcpy(&buf_dht22[1], &temperature, sizeof(temperature));
     memcpy(&buf_dht22[3], &humidity, sizeof(humidity));
  
@@ -157,6 +159,8 @@ void m_and_send_dht22()
     NETSTACK_NETWORK.output(NULL); 
     
     LOG_DBG("Sending DHT22 data\n");
+    SENSORS_DEACTIVATE(dht22);
+    return; 
 }
 
 
@@ -253,7 +257,8 @@ uint8_t datasender( uint8_t id )
 PROCESS(poll_process, "STA process");
 PROCESS(associator_process,"associator process");
 PROCESS(rx_process, "Radio process");
-
+//PROCESS(energest_example_process, "energest");
+//AUTOSTART_PROCESSES(&rx_process, &associator_process, &poll_process, &energest_example_process);
 AUTOSTART_PROCESSES(&rx_process, &associator_process, &poll_process);
 /*---------------------------------------------------------------------------*/
 
@@ -378,7 +383,6 @@ PROCESS_THREAD(rx_process,ev,data)
             else{
                 printf("I'm not associated!!!!!\n");
             }
-            //process_poll(&datasender);         TODO
         }
 
         else if (frame_header ==4) {
@@ -431,8 +435,8 @@ PROCESS_THREAD(poll_process, ev,data){
         buffer_poll = packetbuf_dataptr();
         
 
-        printf("POLL frame!\n");
-        printf("received poll for %d, I am node %d\n", buffer_poll[1], nodeid);
+        LOG_DBG("POLL frame! Received poll for %d, I am node %d\n",buffer_poll[1], nodeid );
+
 
         if(buffer_poll[1] == nodeid)
             {
@@ -440,7 +444,7 @@ PROCESS_THREAD(poll_process, ev,data){
             #if COOJA
                 datasender(nodeid);
             #else
-                m_and_send_dht22();
+                m_and_send_dht22(nodeid);
             #endif
 
 
@@ -448,7 +452,7 @@ PROCESS_THREAD(poll_process, ev,data){
                 NETSTACK_RADIO.off();
                 RTIMER_BUSYWAIT(5);
                 time_after_poll = clock_time() - time_of_beacon_rx;
-                printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu", T_BEACON - 10*CLOCK_SECOND - time_after_poll/CLOCK_SECOND, clock_time()/CLOCK_SECOND, time_of_beacon_rx/CLOCK_SECOND, time_after_poll/CLOCK_SECOND);
+                printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu\n", T_BEACON - 10*CLOCK_SECOND - time_after_poll/CLOCK_SECOND, clock_time()/CLOCK_SECOND, time_of_beacon_rx/CLOCK_SECOND, time_after_poll/CLOCK_SECOND);
                 etimer_set(&next_beacon_etimer, T_BEACON - 3*CLOCK_SECOND - time_after_poll);
                 printf("still here\n");
 
@@ -463,10 +467,14 @@ PROCESS_THREAD(poll_process, ev,data){
             else
             {
                 printf("Error: I'm awake in the %d slot and I am %d \n", buffer_poll[1], nodeid);
-                NETSTACK_RADIO.off();
+
+                //TOO MUCH
+
+                /* NETSTACK_RADIO.off();
                 PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&next_beacon_etimer));
                 NETSTACK_RADIO.on();
                 printf("radio back on, beacon in ~2s \n");
+                */
             }
 
   
@@ -570,6 +578,47 @@ PROCESS_THREAD(associator_process, ev,data){
     PROCESS_END();
 
 }
+
+
+/*
+ * This Process will periodically print energest values for the last minute.
+ *
+ */
+/*
+PROCESS_THREAD(energest_example_process, ev, data)
+{
+  static struct etimer periodic_timer;
+
+  PROCESS_BEGIN();
+
+  etimer_set(&periodic_timer, CLOCK_SECOND * 60);
+  while(1) {
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+    etimer_reset(&periodic_timer);
+
+    
+     * Update all energest times. Should always be called before energest
+     * times are read.
+     
+    energest_flush();
+
+    printf("\nEnergest:\n");
+    printf(" CPU          %4lus LPM      %4lus DEEP LPM %4lus  Total time %lus\n",
+           to_seconds(energest_type_time(ENERGEST_TYPE_CPU)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_LPM)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
+           to_seconds(ENERGEST_GET_TOTAL_TIME()));
+    printf(" Radio LISTEN %4lus TRANSMIT %4lus OFF      %4lus\n",
+           to_seconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
+           to_seconds(ENERGEST_GET_TOTAL_TIME()
+                      - energest_type_time(ENERGEST_TYPE_TRANSMIT)
+                      - energest_type_time(ENERGEST_TYPE_LISTEN)));
+  }
+
+  PROCESS_END();
+}
+*/
 
 
 
