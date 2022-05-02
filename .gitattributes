@@ -12,3 +12,4 @@
 *.s37 binary
 help filter=lfs diff=lfs merge=lfs -text
 .git-old/modules/arch/cpu/arm/CMSIS/objects/pack/pack-a254c2f3ec9592414f50b5eb90043ea1ab2edfab.pack filter=lfs diff=lfs merge=lfs -text
+.git-old/objects/pack/pack-e499e95799a2242da323d3a5efcf94f60b16b80c.pack filter=lfs diff=lfs merge=lfs -text
