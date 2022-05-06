@@ -413,7 +413,12 @@ PROCESS_THREAD(callback_process,ev,data){
                         printf("{\"nodeID\": %d", buf[0] & 0b00011111);
                         printf(",\"Humidity\": %d.%d",  sensors.humidity/10, sensors.humidity%10);
                         printf(",\"Temperature\": %d.%d""}\n",  sensors.temperature/10, sensors.temperature%10);
-                    
+
+                        if((buf[0] & 0b00011111)== NODEID_DHT22_2){
+
+
+                            
+                        }
                     
                         break;
                         

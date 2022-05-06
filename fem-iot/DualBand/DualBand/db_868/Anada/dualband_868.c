@@ -3,7 +3,6 @@
 #include "dev/uart.h"
 #include "net/netstack.h"
 #include "net/nullnet/nullnet.h"
-
 #include "net/packetbuf.h"
 #include <stdio.h>
 #include <stdint.h>
@@ -16,16 +15,52 @@
 static struct etimer et;
 uint16_t counter_uart;
 static char buf_in[100];
-static uint8_t buffer[4];
+uint8_t buffer[4];
 const char delimitador[2] = ",";
 long int sortida[3];
 char* endPtr;
-static bool flag = 0;  
+
 /*---------------------------------------------------------------------------*/
 PROCESS(dualband_868, "dualband 868");
 AUTOSTART_PROCESSES(&dualband_868);
 /*---------------------------------------------------------------------------*/
 
+/*
+La funció següent té la finalitat d'enviar bytes mitjançant UART
+*/
+
+unsigned int uart1_send_bytes(const unsigned char *s, unsigned int len){  
+  unsigned int i = 0;
+
+  while(s && *s != 0){
+    if(i >= len) {
+      break;
+    }
+    uart_write_byte(1, *s++);
+    i++;
+  }
+  return i;
+}
+
+/*
+La funció següent serà cridada cada vegada que arribi un byte
+*/
+
+void input_callback(const void *data, uint16_t len,
+  const linkaddr_t *src, const linkaddr_t *dest){
+  //uint8_t* bytebuf = (uint8_t*) data;
+  uint8_t* bytebuf;
+  bytebuf = malloc(len);
+  memcpy(bytebuf, data, len);
+
+  printf("Data beacon: B0 %d %d %d\n", bytebuf[0], bytebuf[1], bytebuf[2]);
+  
+  char string[20];
+
+  sprintf(string, "B0, %d, %d, %d\n", bytebuf[0], bytebuf[1], bytebuf[2]);
+
+  uart1_send_bytes((uint8_t *)string, sizeof(string) - 1);
+}
 
 
 //TORNADA
@@ -72,10 +107,14 @@ void serial_in(){
 
   printf("HOLA %d %d, %d, %d\n", buffer[0], buffer[1], buffer[2], buffer[3]);
    
-  flag = 1;   
+    
 
   // Mesura sensors
-  
+  nullnet_buf = buffer;
+  //memcpy(nullnet_buf, sortida, sizeof(sortida));
+  nullnet_len = sizeof(buffer);
+
+  NETSTACK_NETWORK.output(NULL);
   }
 }
 
@@ -99,23 +138,21 @@ int print_uart(unsigned char c){
 PROCESS_THREAD(dualband_868, ev, data){
 
   PROCESS_BEGIN();
+
+  nullnet_set_input_callback(input_callback);
+
+  while(1){
+
+    PROCESS_YIELD();
+  
+  }
  
   //TORNADA
   uart_set_input(1, print_uart);
   while(1){
-        
-      etimer_set(&et, CLOCK_SECOND * 4);
-      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-
-      if(flag ==1){
-
-        flag = 0;
-        nullnet_buf = buffer;
-        nullnet_len = sizeof(buffer);
-
-  NETSTACK_NETWORK.output(NULL);
-
-      }
+    
+  etimer_set(&et, CLOCK_SECOND * 4);
+  PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
   }
 #ifdef DEBUG
   sprintf(buf_in, "B0, %d, %d, %d", 0, 23, 44);

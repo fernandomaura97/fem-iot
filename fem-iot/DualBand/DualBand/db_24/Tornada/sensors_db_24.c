@@ -33,7 +33,8 @@ PROCESS_THREAD(sensors_db_24, ev, data){
  
 
 
-  
+  NETSTACK_NETWORK.output(NULL);
+
  while(1){
   etimer_set(&et, 10*CLOCK_SECOND);
   uint8_t buffer[7] = {0, 23.2, 34.5, 102};
@@ -41,12 +42,8 @@ PROCESS_THREAD(sensors_db_24, ev, data){
   nullnet_len = sizeof(buffer);
   printf("Que voy!\n");
   printf("%d %d %d %d", buffer[0], buffer[1], buffer[2], buffer[3]);
-  NETSTACK_NETWORK.output(NULL);
-
-  
     PROCESS_YIELD(); 
     
   }
   PROCESS_END();
 }
-

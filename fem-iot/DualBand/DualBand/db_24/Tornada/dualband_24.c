@@ -56,6 +56,7 @@ void input_callback(const void *data, uint16_t len,
   sprintf(string, "%d, %d, %d, %d\n", bytebuf[0], bytebuf[1], bytebuf[2], bytebuf[3]);
 
   uart1_send_bytes((uint8_t *)string, sizeof(string) - 1);
+  free(bytebuf);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -73,4 +74,3 @@ PROCESS_THREAD(dualband_24, ev, data){
 
   PROCESS_END();
 }
-

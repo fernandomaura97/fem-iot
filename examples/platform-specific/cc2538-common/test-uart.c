@@ -55,7 +55,6 @@
 #include <stdio.h>
 #include <stdint.h>
 /*---------------------------------------------------------------------------*/
-static struct etimer et;
 /*---------------------------------------------------------------------------*/
 PROCESS(cc2538_uart_demo_process, "cc2538 uart demo");
 AUTOSTART_PROCESSES(&cc2538_uart_demo_process);

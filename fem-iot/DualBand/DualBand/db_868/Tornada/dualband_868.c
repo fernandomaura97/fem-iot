@@ -3,7 +3,6 @@
 #include "dev/uart.h"
 #include "net/netstack.h"
 #include "net/nullnet/nullnet.h"
-
 #include "net/packetbuf.h"
 #include <stdio.h>
 #include <stdint.h>
@@ -16,11 +15,11 @@
 static struct etimer et;
 uint16_t counter_uart;
 static char buf_in[100];
-static uint8_t buffer[4];
+uint8_t buffer[4];
 const char delimitador[2] = ",";
 long int sortida[3];
 char* endPtr;
-static bool flag = 0;  
+
 /*---------------------------------------------------------------------------*/
 PROCESS(dualband_868, "dualband 868");
 AUTOSTART_PROCESSES(&dualband_868);
@@ -72,10 +71,14 @@ void serial_in(){
 
   printf("HOLA %d %d, %d, %d\n", buffer[0], buffer[1], buffer[2], buffer[3]);
    
-  flag = 1;   
+    
 
   // Mesura sensors
-  
+  nullnet_buf = buffer;
+  //memcpy(nullnet_buf, sortida, sizeof(sortida));
+  nullnet_len = sizeof(buffer);
+
+  NETSTACK_NETWORK.output(NULL);
   }
 }
 
@@ -103,19 +106,9 @@ PROCESS_THREAD(dualband_868, ev, data){
   //TORNADA
   uart_set_input(1, print_uart);
   while(1){
-        
-      etimer_set(&et, CLOCK_SECOND * 4);
-      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-
-      if(flag ==1){
-
-        flag = 0;
-        nullnet_buf = buffer;
-        nullnet_len = sizeof(buffer);
-
-  NETSTACK_NETWORK.output(NULL);
-
-      }
+    
+  etimer_set(&et, CLOCK_SECOND * 4);
+  PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
   }
 #ifdef DEBUG
   sprintf(buf_in, "B0, %d, %d, %d", 0, 23, 44);
