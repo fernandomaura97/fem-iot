@@ -73,18 +73,20 @@ void serial_in(){
     header = strtok(buffer_header, delimitador);
 
     buffer[0] = atoi(header);
-
+  
     char *token = strtok(buf_in, delimitador);
+    printf("tokenx: %s\n", token);
     int i= 0; 
     
     while(token != NULL){
       
       token = strtok(NULL, delimitador);
+      printf("token%d: %s\n",i, token);
 
       if(i == 0){
         
-        buffer[1] = atoi(token);
-	      memcpy(&datas.temperature, &buffer[1], 2);
+        datas.temperature = atoi(token);
+        
       }
       else if(i == 1){
 
@@ -111,7 +113,7 @@ int print_uart(unsigned char c){
 	counter_uart++;
 
 	if (c == '\n'){
-		//printf("SERIAL DATA IN --> %s\n", (char *)buf_in);
+		printf("SERIAL DATA IN --> %s\n", (char *)buf_in);
 		counter_uart = 0;
 		serial_in();
 	}
