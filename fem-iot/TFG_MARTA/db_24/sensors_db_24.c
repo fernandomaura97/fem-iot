@@ -9,6 +9,7 @@
 #include "dev/adc-sensors.h"
 #include "lib/sensors.h"
 #include "dev/serial-line.h"
+#include "dades.h"
 #include "dev/leds.h"
 #include "sys/log.h"
 #include <stdio.h>
@@ -19,34 +20,103 @@
 #define ADC_PIN 2 // ADC1 utilitza el pin 5 i ADC3 utilitza el pin 2. Es pot veure en el datasheet
 #define SENSOR_READ_INTERVAL (CLOCK_SECOND / 8)
 /*---------------------------------------------------------------------------*/
+
 static struct etimer et;
+static bool flag = 0;
+static uint8_t buffer[7]; // 1 byte capçalera i 2 bytes per variable
+
+static struct data datas;
+
+/*---------------------------------------------------------------------------*/
+
+void mesures_sensors(){
+
+  int16_t temperature, humidity;
+  uint16_t loudness;
+
+  SENSORS_ACTIVATE(dht22);
+
+  adc_sensors.configure(ANALOG_GROVE_LOUDNESS, ADC_PIN);
+  if(dht22_read_all(&temperature, &humidity) != DHT22_ERROR){
+    
+    //Emmagatzemem a l'estructura anomenada data
+    datas.temperature = temperature;
+    datas.humidity = humidity;
+
+    printf(",\"Temperature\": %02d.%02d", temperature / 10, temperature % 10);
+    printf(", \"Humidity\": %02d.%02d", humidity / 10, humidity % 10);
+  }
+  else{
+
+    //Emmagatzemem a l'estructura anomenada data
+    datas.temperature = 0;
+    datas.humidity = 0;
+    printf("Failed to read the sensor\n");
+  }
+
+  loudness = adc_sensors.value(ANALOG_GROVE_LOUDNESS);
+  if(loudness != ADC_WRAPPER_ERROR){
+
+    //Emmagatzemem a l'estructura anomenada data
+    datas.noise = loudness;
+    printf(", \"Noise\": %u}", loudness);
+  }
+  else{
+    datas.noise = 0;
+    printf("Error, enable the DEBUG flag in adc-wrapper.c for info\n");
+  }
+  printf("\n");
+
+  //Afegir capçalera. Per exemple: buffer[0] = id;
+  buffer[0] = 0;
+  memcpy(&buffer[1], &datas.temperature, sizeof(datas.temperature));
+  memcpy(&buffer[3], &datas.humidity, sizeof(datas.humidity));
+  memcpy(&buffer[5], &datas.noise, sizeof(datas.noise));
+
+  flag = 1;
+
+}
 
 /*---------------------------------------------------------------------------*/
 PROCESS(sensors_db_24, "sensors db 24");
 AUTOSTART_PROCESSES(&sensors_db_24);
 /*---------------------------------------------------------------------------*/
 
+void input_callback(const void *data, uint16_t len,
+  const linkaddr_t *src, const linkaddr_t *dest){
+  uint8_t* bytebuf;
+  bytebuf = malloc(len);
+  memcpy(bytebuf, data, len);
+
+  printf("Data beacon: B0 %d %d %d\n", bytebuf[0], bytebuf[1], bytebuf[2]);
+
+  mesures_sensors();
+
+  free(bytebuf);
+}
+
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(sensors_db_24, ev, data){
 
+
   PROCESS_BEGIN();
- 
 
+  nullnet_set_input_callback(input_callback);
 
-  
- while(1){
-  etimer_set(&et, 10*CLOCK_SECOND);
-  uint8_t buffer[7] = {0, 23.2, 34.5, 102};
-  nullnet_buf = (uint8_t *) &buffer;
-  nullnet_len = sizeof(buffer);
-  printf("Que voy!\n");
-  printf("%d %d %d %d", buffer[0], buffer[1], buffer[2], buffer[3]);
-  NETSTACK_NETWORK.output(NULL);
+  while(1){
 
-  
-    PROCESS_YIELD(); 
+    etimer_set(&et, 10*CLOCK_SECOND);
+    PROCESS_YIELD();
+
+    if(flag == 1){
+      flag = 0;
+      nullnet_buf = (uint8_t *) &buffer;
+      nullnet_len = sizeof(buffer);
+      NETSTACK_NETWORK.output(NULL);
+    }  
     
   }
+
+  printf("\n");
   PROCESS_END();
 }
-

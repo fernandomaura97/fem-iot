@@ -1,4 +1,4 @@
-CONTIKI_PROJECT = beacons dualband_868
+CONTIKI_PROJECT = db_24 db_868
 
 all: $(CONTIKI_PROJECT)
 
