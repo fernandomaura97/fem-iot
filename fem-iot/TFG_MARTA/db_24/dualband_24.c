@@ -116,6 +116,7 @@ void input_callback(const void *data, uint16_t len,
   char string[20];
 
   sprintf(string, "%d %d %u\n",  datas.temperature , datas.humidity, datas.noise);
+  printf("string sent: %s; END\n", string);
 
   uart1_send_bytes((uint8_t *)string, sizeof(string) - 1);
 
