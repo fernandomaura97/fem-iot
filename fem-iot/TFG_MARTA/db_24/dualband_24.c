@@ -1,28 +1,41 @@
 #include "contiki.h"
-#include "sys/etimer.h"
+
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h> 
+#include <string.h>
+
 #include "dev/leds.h"
 #include "dev/uart.h"
 #include "dev/serial-line.h"
 #include "sys/log.h"
 #include "net/netstack.h"
 #include "net/nullnet/nullnet.h"
-#include "net/packetbuf.h"
-#include "dades.h"
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 
+#include "net/packetbuf.h"
+
+
+PROCESS(dualband_24, "dualband 24");
+PROCESS(sender, "sender");
+AUTOSTART_PROCESSES(&dualband_24, &sender);
+/*---------------------------------------------------------------------------*/
+
+
+typedef struct data_t{
+  int16_t temperature, humidity;
+  uint16_t noise;
+} data_t;
+
+static struct data_t datas; 
 
 char buf_in[100];
 uint8_t beacon[3];
 const char delimitador[2] = ",";
 long int sortida[3];
 char* endPtr;
-static bool flag = 0;
-static struct data datas; 
+//static bool flag = 0;
 
-uint16_t counter_uart;
+uint16_t counter_uart = 0;
 
 
 
@@ -66,8 +79,8 @@ void serial_in(){ // Implementa la lògica a la cadena de caràcters que ha entr
     }
 
    
-  flag = 1;  
-
+  //flag = 1;  
+  process_poll(&sender);
   }
   printf("Beacon: B0, %d, %d, %d\n", beacon[0], beacon[1], beacon[2]);
 }
@@ -77,7 +90,7 @@ int print_uart(unsigned char c){
 	counter_uart++;
 
 	if (c == '\n'){
-		printf("SERIAL DATA IN --> %s\n", (char *)buf_in); // SERIAL DATA IN --> B0, 0, 0, 0
+		printf("SERIAL DATA IN --> %s", (char *)buf_in); // SERIAL DATA IN --> B0, 0, 0, 0
 		counter_uart = 0;
 		serial_in();
 	}
@@ -94,48 +107,66 @@ void input_callback(const void *data, uint16_t len,
   memcpy(bytebuf, data, len);
 
   bytebuf[0] = 0;
-  memcpy(&datas.temperature, &bytebuf[1], 2);
-  memcpy(&datas.humidity, &bytebuf[3], 2);
-  memcpy(&datas.noise, &bytebuf[5], 2);
+  memcpy(&datas.temperature, &bytebuf[1], sizeof(int16_t));
+  memcpy(&datas.humidity, &bytebuf[3], sizeof(int16_t));
+  memcpy(&datas.noise, &bytebuf[5], sizeof(uint16_t));
 
   printf("Data sensors:  %d %02d.%02d %02d.%02d %u\n", bytebuf[0], datas.temperature / 10, datas.temperature%10, datas.humidity / 10, datas.humidity % 10, datas.noise);
   
   char string[20];
 
-  sprintf(string, "%d %d %d %u\n", bytebuf[0], datas.temperature , datas.humidity, datas.noise);
+  sprintf(string, "%d %d %u\n",  datas.temperature , datas.humidity, datas.noise);
 
   uart1_send_bytes((uint8_t *)string, sizeof(string) - 1);
 
   free(bytebuf);
 }
 /*---------------------------------------------------------------------------*/
-PROCESS(dualband_24, "dualband 24");
-AUTOSTART_PROCESSES(&dualband_24);
-/*---------------------------------------------------------------------------*/
+
 
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(dualband_24, ev, data){
 
-  static struct etimer et;
+  //static struct etimer et;
   PROCESS_BEGIN();
 
+  nullnet_set_input_callback(input_callback);
   uart_set_input(1, print_uart);
 
   while(1){  
-    etimer_set(&et, CLOCK_SECOND * 4);
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+    PROCESS_YIELD();
 
-    if (flag == 1){
+    /*if (flag == 1){
       flag = 0;
       nullnet_buf = beacon;
       nullnet_len = 3;
 
-      NETSTACK_NETWORK.output(NULL);
-    }
+      printf("broadcasting BEACON: %d, %d, %d\n", beacon[0], beacon[1], beacon[2]);
 
-    nullnet_set_input_callback(input_callback);
+      NETSTACK_NETWORK.output(NULL);
+    }*/
+
   }
   
-  printf("\n");
   PROCESS_END();
+}
+
+PROCESS_THREAD(sender, ev,data){
+  PROCESS_BEGIN();
+
+  while(1){
+
+    PROCESS_WAIT_EVENT_UNTIL(PROCESS_EVENT_POLL);
+
+    nullnet_buf = beacon;
+    nullnet_len = 3;
+
+    printf("broadcasting BEACON: %d, %d, %d\n", beacon[0], beacon[1], beacon[2]);
+
+    NETSTACK_NETWORK.output(NULL);
+      
+
+  }
+  PROCESS_END();
+
 }

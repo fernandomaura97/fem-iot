@@ -9,7 +9,6 @@
 #include "dev/adc-sensors.h"
 #include "lib/sensors.h"
 #include "dev/serial-line.h"
-#include "dades.h"
 #include "dev/leds.h"
 #include "sys/log.h"
 #include <stdio.h>
@@ -21,11 +20,17 @@
 #define SENSOR_READ_INTERVAL (CLOCK_SECOND / 8)
 /*---------------------------------------------------------------------------*/
 
-static struct etimer et;
-static bool flag = 0;
+//static struct etimer et;
+//static bool flag = 0;
 static uint8_t buffer[7]; // 1 byte capçalera i 2 bytes per variable
 
-static struct data datas;
+
+typedef struct data_t{
+  int16_t temperature, humidity;
+  uint16_t noise;
+} data_t;
+
+static struct data_t datas;
 
 /*---------------------------------------------------------------------------*/
 
@@ -43,7 +48,7 @@ void mesures_sensors(){
     datas.temperature = temperature;
     datas.humidity = humidity;
 
-    printf(",\"Temperature\": %02d.%02d", temperature / 10, temperature % 10);
+    printf("{\"Temperature\": %02d.%02d", temperature / 10, temperature % 10);
     printf(", \"Humidity\": %02d.%02d", humidity / 10, humidity % 10);
   }
   else{
@@ -59,7 +64,7 @@ void mesures_sensors(){
 
     //Emmagatzemem a l'estructura anomenada data
     datas.noise = loudness;
-    printf(", \"Noise\": %u}", loudness);
+    printf(", \"Noise\": %u}\n", loudness);
   }
   else{
     datas.noise = 0;
@@ -72,8 +77,6 @@ void mesures_sensors(){
   memcpy(&buffer[1], &datas.temperature, sizeof(datas.temperature));
   memcpy(&buffer[3], &datas.humidity, sizeof(datas.humidity));
   memcpy(&buffer[5], &datas.noise, sizeof(datas.noise));
-
-  flag = 1;
 
 }
 
@@ -91,6 +94,7 @@ void input_callback(const void *data, uint16_t len,
   printf("Data beacon: B0 %d %d %d\n", bytebuf[0], bytebuf[1], bytebuf[2]);
 
   mesures_sensors();
+  process_poll(&sensors_db_24);
 
   free(bytebuf);
 }
@@ -102,21 +106,15 @@ PROCESS_THREAD(sensors_db_24, ev, data){
   PROCESS_BEGIN();
 
   nullnet_set_input_callback(input_callback);
+  while(1)
+  {
+    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
 
-  while(1){
-
-    etimer_set(&et, 10*CLOCK_SECOND);
-    PROCESS_YIELD();
-
-    if(flag == 1){
-      flag = 0;
-      nullnet_buf = (uint8_t *) &buffer;
-      nullnet_len = sizeof(buffer);
-      NETSTACK_NETWORK.output(NULL);
-    }  
-    
+    nullnet_buf = (uint8_t*)&buffer;
+    nullnet_len = sizeof(buffer);
+    NETSTACK_NETWORK.output(NULL);
+    printf("sensor data out\n");
   }
-
-  printf("\n");
+  
   PROCESS_END();
 }

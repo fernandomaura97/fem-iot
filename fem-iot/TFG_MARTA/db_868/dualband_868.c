@@ -1,7 +1,6 @@
 #include "contiki.h"
 #include "sys/etimer.h"
 #include "dev/uart.h"
-#include "dades.h"
 #include "dev/serial-line.h"
 #include "net/netstack.h"
 #include "net/nullnet/nullnet.h"
@@ -13,6 +12,15 @@
 #include <string.h>
 
 /*---------------------------------------------------------------------------*/
+
+
+typedef struct data_t{
+  int16_t temperature, humidity;
+  uint16_t noise;
+} data_t;
+
+static struct data_t datas; 
+
 static struct etimer et;
 uint16_t counter_uart;
 static char buf_in[100];
@@ -45,23 +53,24 @@ void input_callback(const void *data, uint16_t len,
   bytebuf = malloc(len);
   memcpy(bytebuf, data, len);
 
-  printf("Data beacon: B0 %d %d %d\n", bytebuf[0], bytebuf[1], bytebuf[2]);
+  printf("Beacon received: %d %d %d\n", bytebuf[0], bytebuf[1], bytebuf[2]);
   
   char string[20];
 
   sprintf(string, "B0, %d, %d, %d\n", bytebuf[0], bytebuf[1], bytebuf[2]);
 
   uart1_send_bytes((uint8_t *)string, sizeof(string) - 1);
+  printf("beacon sent UART\n");
 
   free(bytebuf);
 }
 
 void serial_in(){
 
-      char buffer_header[20];
-      strcpy(buffer_header, buf_in);
-      char *header; 
-      header = strtok(buffer_header, delimitador);
+    char buffer_header[20];
+    strcpy(buffer_header, buf_in);
+    char *header; 
+    header = strtok(buffer_header, delimitador);
 
     buffer[0] = atoi(header);
 
@@ -69,17 +78,20 @@ void serial_in(){
     int i= 0; 
     
     while(token != NULL){
+      
       token = strtok(NULL, delimitador);
 
       if(i == 0){
+        
         buffer[1] = atoi(token);
-	memcpy(&datas.temperature, &buffer[1], 2);
+	      memcpy(&datas.temperature, &buffer[1], 2);
       }
       else if(i == 1){
-	datas.humidity = atoi(token);
+
+        	datas.humidity = atoi(token);
       }
       else if(i == 2){
-        datas.noise = atoi(token);
+          datas.noise = atoi(token);
       }
       i++;
     }
@@ -94,11 +106,12 @@ void serial_in(){
 
 
 int print_uart(unsigned char c){
+
 	buf_in[counter_uart] = c;
 	counter_uart++;
 
 	if (c == '\n'){
-		printf("SERIAL DATA IN --> %s\n", (char *)buf_in);
+		//printf("SERIAL DATA IN --> %s\n", (char *)buf_in);
 		counter_uart = 0;
 		serial_in();
 	}
@@ -124,7 +137,7 @@ PROCESS_THREAD(dualband_868, ev, data){
         nullnet_len = sizeof(buffer);
 
         NETSTACK_NETWORK.output(NULL);
-	printf("Data sensors surt: %d %02d.%02d %02d.%02d %u\n", buffer[0], datas.temperature / 10, datas.temperature%10, datas.humidity / 10, datas.humidity % 10, datas.noise);
+      	printf("Data sensors surt: %d %02d.%02d %02d.%02d %u\n", buffer[0], datas.temperature / 10, datas.temperature%10, datas.humidity / 10, datas.humidity % 10, datas.noise);
 	
       }
   }
