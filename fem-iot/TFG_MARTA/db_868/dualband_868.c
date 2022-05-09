@@ -21,14 +21,14 @@ typedef struct data_t{
 
 static struct data_t datas; 
 
-static struct etimer et;
+//static struct etimer et;
 uint16_t counter_uart;
 static char buf_in[100];
 static uint8_t buffer[7];
 const char delimitador[3] = " ";
 long int sortida[3];
 char* endPtr;
-static bool flag = 0;  
+//static bool flag = 0;  
 /*---------------------------------------------------------------------------*/
 PROCESS(dualband_868, "dualband 868");
 AUTOSTART_PROCESSES(&dualband_868);
@@ -100,10 +100,13 @@ void serial_in(){
 
   printf("Data sensors arriba: %d %02d.%02d %02d.%02d %u\n", buffer[0], datas.temperature / 10, datas.temperature%10, datas.humidity / 10, datas.humidity % 10, datas.noise);
 
-  flag = 1;   
+   
   memcpy(&buffer[1], &datas.temperature, sizeof(datas.temperature));
   memcpy(&buffer[3], &datas.humidity, sizeof(datas.humidity));
   memcpy(&buffer[5], &datas.noise, sizeof(datas.noise));
+
+
+  process_poll(&dualband_868); //process_wait_till_event();
 }
 
 
@@ -130,19 +133,15 @@ PROCESS_THREAD(dualband_868, ev, data){
   uart_set_input(1, print_uart);
   while(1){
         
-      etimer_set(&et, CLOCK_SECOND * 4);
-      PROCESS_YIELD();
+      
+      PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
 
-      if(flag == 1){
-        flag = 0;
-        nullnet_buf = (uint8_t *) &buffer;
-        nullnet_len = sizeof(buffer);
+      nullnet_buf = (uint8_t *) &buffer;
+      nullnet_len = sizeof(buffer);
 
-        NETSTACK_NETWORK.output(NULL);
-      	printf("Data sensors surt: %d %02d.%02d %02d.%02d %u\n", buffer[0], datas.temperature / 10, datas.temperature%10, datas.humidity / 10, datas.humidity % 10, datas.noise);
+      NETSTACK_NETWORK.output(NULL);
+      printf("Data sensors surt: %d %02d.%02d %02d.%02d %u\n", buffer[0], datas.temperature / 10, datas.temperature%10, datas.humidity / 10, datas.humidity % 10, datas.noise);
 	
       }
-  }
-printf("\n");
   PROCESS_END();
 }

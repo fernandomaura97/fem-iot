@@ -23,7 +23,7 @@ typedef struct data_t{
 } data_t; 
 
 struct data_t datas; 
-
+static clock_time_t now, last;
 /*---------------------------------------------------------------------------*/
 
 PROCESS(beacons, "beacons");
@@ -37,6 +37,7 @@ void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest){
 
   uint8_t* bytebuf;
+  last = RTIMER_NOW() - now;
   bytebuf = malloc(len);
   memcpy(bytebuf, data, len);
 
@@ -47,6 +48,10 @@ void input_callback(const void *data, uint16_t len,
   printf("{\"Temperature\": %02d.%02d", datas.temperature / 10, datas.temperature % 10);
   printf(", \"Humidity\": %02d.%02d", datas.humidity / 10, datas.humidity % 10);
   printf(", \"Noise\": %u}\n\n", datas.noise);
+  
+  
+
+  printf("Time elapsed: %lu ticks, %lu seconds, %lu ms\n", last, last / CLOCK_SECOND, last / CLOCK_SECOND * 1000);
 
   free(bytebuf);
 }
@@ -69,12 +74,10 @@ PROCESS_THREAD(beacons, ev, data){
     beacon[1] = random_rand() % 255;
     beacon[2] = random_rand() % 255;
 
-    
-   
-
     nullnet_buf = beacon;
     nullnet_len = 3;
 
+    now = RTIMER_NOW();
     NETSTACK_NETWORK.output(NULL);
 
     nullnet_set_input_callback(input_callback);
