@@ -1,0 +1,934 @@
+[
+    {
+        "id": "c14dd18d284ce75b",
+        "type": "tab",
+        "label": "TS- GW TEST!!",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "f731e9baa3d7c2d0",
+        "type": "http request",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "https://api.thingspeak.com/channels/1730171/feeds.json?api_key=FZTOJP6BLH1WCX2U&results=20",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "senderr": false,
+        "x": 1650,
+        "y": 460,
+        "wires": [
+            [
+                "ae792494801450b2",
+                "3a5ef146d9d37ee5"
+            ]
+        ]
+    },
+    {
+        "id": "50df06e72cd4cb87",
+        "type": "switch",
+        "z": "c14dd18d284ce75b",
+        "name": "IF == \"AA0\"",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "\"AA0\\n\"",
+                "vt": "jsonata"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1110,
+        "y": 460,
+        "wires": [
+            [
+                "09a424d0f3c5e1e7"
+            ]
+        ]
+    },
+    {
+        "id": "9d961ba92d2ddfaa",
+        "type": "inject",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "\"AA0\\n\"",
+        "payloadType": "json",
+        "x": 910,
+        "y": 300,
+        "wires": [
+            [
+                "50df06e72cd4cb87",
+                "68122cfd7a0c7e54"
+            ]
+        ]
+    },
+    {
+        "id": "68122cfd7a0c7e54",
+        "type": "debug",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1110,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "09a424d0f3c5e1e7",
+        "type": "function",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "func": "\n\nvar counter = flow.get(\"counter\")||0;\nvar old_TSvalue = flow.get(\"oldTSvalue\") ||0;\n\ncounter += 1 ; \n//node.warn([\"Contador:\" + counter, \"OLD TS_value: \"+ old_TSvalue]);\n\nflow.set(\"counter\", counter);\n\n\n\n//flow.set(mycounter)\n/*if(mycounter == http_value){\n    \n    \n    \n}*/\n\n\n\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1300,
+        "y": 460,
+        "wires": [
+            [
+                "598d5c905e2576fb"
+            ]
+        ]
+    },
+    {
+        "id": "3a5ef146d9d37ee5",
+        "type": "function",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "func": "\n//if (msg.payload.feeds[0].field2)!=NULL){}\nfor(let step = 0; step<msg.payload.feeds.length;step++){\n    \n    if(msg.payload.feeds[step].field1!=null)\n    {\n        \n        //node.warn(\"AJAJA NO NULL\" + msg.payload.feeds[step].field1);\n        var n_cycles = msg.payload.feeds[step].field1 //n_cycles is last non-null value\n    }\n}\n//var n_cycles = 2; //OJO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\nflow.set('oldTSvalue', n_cycles);\n\n\nvar contador = flow.get(\"counter\");\n\n\n\n\n\nnode.warn([\"DBG counter: \" + contador , \"DBG Thingspeak cycles: \" + n_cycles]);\n\n\n\nif(contador >= n_cycles)\n{\n    node.warn(\"CONDITION FULFILLED\");\n    flow.set('counter', 0);\n    msg.bitmask = 0b11111111; //once\n    flow.set('bitmask',255);\n}\n\nelse{\n    \n    msg.bitmask = 0b00000001; //Set last nodeid to 1, so we have a sensor measuring all the time\n    flow.set('bitmask',1);\n}\n\n//msg.counter = \n\n\nmsg.cycles = n_cycles;\n\nnode.warn(\"DBG bitmask: \" + msg.bitmask);\n\n\n\nnode.error(\"END\");\n\n//msg.payload = 'BM,${{msg.bitmask}}';\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1840,
+        "y": 460,
+        "wires": [
+            [
+                "b52697ada0c106ca"
+            ]
+        ]
+    },
+    {
+        "id": "7448e4946effaa33",
+        "type": "debug",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 2270,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "ae792494801450b2",
+        "type": "debug",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1570,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "f3942e7b1d0999ed",
+        "type": "serial out",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "serial": "6fff800f.c81fe",
+        "x": 2410,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "f12f7e04a8793fd3",
+        "type": "inject",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "\"BM,236\\n\"",
+        "payloadType": "json",
+        "x": 2060,
+        "y": 580,
+        "wires": [
+            [
+                "f3942e7b1d0999ed"
+            ]
+        ]
+    },
+    {
+        "id": "7315a291db8dcd78",
+        "type": "serial in",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "serial": "6fff800f.c81fe",
+        "x": 650,
+        "y": 660,
+        "wires": [
+            [
+                "50df06e72cd4cb87",
+                "aadd92b5e347899d",
+                "3b6d26456f9866aa",
+                "7f457d91717e9e0a"
+            ]
+        ]
+    },
+    {
+        "id": "aadd92b5e347899d",
+        "type": "debug",
+        "z": "c14dd18d284ce75b",
+        "name": "SERIAL INPUT",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1040,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "ef83ce7799e0b39b",
+        "type": "json",
+        "z": "c14dd18d284ce75b",
+        "name": "JSON Parser",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 1030,
+        "y": 1220,
+        "wires": [
+            [
+                "c35a6e8a081775d6"
+            ]
+        ]
+    },
+    {
+        "id": "3b6d26456f9866aa",
+        "type": "switch",
+        "z": "c14dd18d284ce75b",
+        "name": "Lost Message Counter",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "cont",
+                "v": "\"LMC\"",
+                "vt": "jsonata"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1320,
+        "y": 900,
+        "wires": [
+            [
+                "9bea952ecfa92494",
+                "c382b7ee291bbbb7"
+            ]
+        ]
+    },
+    {
+        "id": "fdd248750d496c59",
+        "type": "inject",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "\"LMC,59870\\n\"",
+        "payloadType": "json",
+        "x": 1060,
+        "y": 900,
+        "wires": [
+            [
+                "3b6d26456f9866aa"
+            ]
+        ]
+    },
+    {
+        "id": "9bea952ecfa92494",
+        "type": "split",
+        "z": "c14dd18d284ce75b",
+        "d": true,
+        "name": "",
+        "splt": ",",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 1330,
+        "y": 800,
+        "wires": [
+            [
+                "55e78d9f7d717a8c",
+                "c382b7ee291bbbb7"
+            ]
+        ]
+    },
+    {
+        "id": "55e78d9f7d717a8c",
+        "type": "debug",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1610,
+        "y": 940,
+        "wires": []
+    },
+    {
+        "id": "3e6398bb12115221",
+        "type": "debug",
+        "z": "c14dd18d284ce75b",
+        "name": "string [trash]",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1890,
+        "y": 840,
+        "wires": []
+    },
+    {
+        "id": "1117e705e715c9c6",
+        "type": "debug",
+        "z": "c14dd18d284ce75b",
+        "name": "LOST MESSAGE COUNTER",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "jsonata",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1940,
+        "y": 900,
+        "wires": []
+    },
+    {
+        "id": "7f457d91717e9e0a",
+        "type": "switch",
+        "z": "c14dd18d284ce75b",
+        "name": "is JSON?",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "istype",
+                "v": "json",
+                "vt": "json"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 860,
+        "y": 1220,
+        "wires": [
+            [
+                "ef83ce7799e0b39b"
+            ]
+        ]
+    },
+    {
+        "id": "23e2ec1751d785d2",
+        "type": "file",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "filename": "/home/pradeepkumar/Documents/contiki-ng/logs node-red/log_LMC.txt",
+        "appendNewline": true,
+        "createDir": false,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 2090,
+        "y": 1040,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c382b7ee291bbbb7",
+        "type": "function",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "func": "//msg.Time = new Date();\n\nvar output = msg.payload.split(\",\");\n\nvar string = output[0];\nvar lmc = parseInt(output[1]);\n\nvar msg1 = {payload:lmc}; \nmsg1.payload.Time = new Date();\nreturn msg1;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\n\nvar msgstart = { string: \"Beggining of test\" , date: new Date() }\n\nreturn msgstart;",
+        "finalize": "",
+        "libs": [],
+        "x": 1640,
+        "y": 900,
+        "wires": [
+            [
+                "1117e705e715c9c6",
+                "23e2ec1751d785d2"
+            ]
+        ]
+    },
+    {
+        "id": "a0310b05e83dd47a",
+        "type": "inject",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"nodeID\": 2,\"Humidity\": 43.8,\"Temperature\": 25.7}",
+        "payloadType": "str",
+        "x": 670,
+        "y": 1220,
+        "wires": [
+            [
+                "7f457d91717e9e0a"
+            ]
+        ]
+    },
+    {
+        "id": "b52697ada0c106ca",
+        "type": "template",
+        "z": "c14dd18d284ce75b",
+        "name": "Convert to string",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "handlebars",
+        "syntax": "mustache",
+        "template": "BM,{{bitmask}}\n",
+        "output": "str",
+        "x": 2040,
+        "y": 460,
+        "wires": [
+            [
+                "7448e4946effaa33",
+                "f3942e7b1d0999ed"
+            ]
+        ]
+    },
+    {
+        "id": "f6dce46ccc8bc305",
+        "type": "template",
+        "z": "c14dd18d284ce75b",
+        "name": "POST template",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "handlebars",
+        "syntax": "mustache",
+        "template": "{\n\"write_api_key\": \"U4JR7GM4UMW3EYLA\",\n\t\"updates\": [{\n\t\t\t\"created_at\": \"{{payload.1.time}}\",\n\t\t\t\"field2\": \"{{payload.1.nodeID}}\",\n\t\t\t\"field3\": \"{{payload.1.Temperature}}\",\n\t\t\t\"field4\": \"{{payload.1.Humidity}}\"\n\t\t},\n\t\t{\n\t\t\t\"created_at\": \"{{payload.2.time}}\",\n\t\t\t\"field2\": \"{{payload.2.nodeID}}\",\n\t\t\t\"field3\": \"{{payload.2.Temperature}}\",\n\t\t\t\"field4\": \"{{payload.2.Humidity}}\"\n\t\t}\n\t]\n\t\n}\n",
+        "output": "json",
+        "x": 2040,
+        "y": 1220,
+        "wires": [
+            [
+                "e2adb3b3691a5906",
+                "974b61102c126bad"
+            ]
+        ]
+    },
+    {
+        "id": "f195ed3c92c2bd6c",
+        "type": "join",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "mode": "custom",
+        "build": "object",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "payload.nodeID",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "",
+        "count": "2",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 1690,
+        "y": 1220,
+        "wires": [
+            [
+                "f6dce46ccc8bc305"
+            ]
+        ]
+    },
+    {
+        "id": "e2adb3b3691a5906",
+        "type": "debug",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 2270,
+        "y": 1220,
+        "wires": []
+    },
+    {
+        "id": "974b61102c126bad",
+        "type": "http request",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "body",
+        "url": "https://api.thingspeak.com/channels/1721563/bulk_update.json",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "senderr": false,
+        "x": 2270,
+        "y": 1320,
+        "wires": [
+            [
+                "c4aadb30c855b0b6"
+            ]
+        ]
+    },
+    {
+        "id": "c4aadb30c855b0b6",
+        "type": "debug",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 2450,
+        "y": 1320,
+        "wires": []
+    },
+    {
+        "id": "b1dd6d6f65aa2931",
+        "type": "function",
+        "z": "c14dd18d284ce75b",
+        "name": "Set timestamp to payload.time",
+        "func": "\n\nvar time = new Date().toISOString();\nmsg.payload.time = time; \nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1450,
+        "y": 1220,
+        "wires": [
+            [
+                "f195ed3c92c2bd6c",
+                "fa3ecb969f4ab71d"
+            ]
+        ]
+    },
+    {
+        "id": "fa3ecb969f4ab71d",
+        "type": "debug",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1690,
+        "y": 1280,
+        "wires": []
+    },
+    {
+        "id": "c35a6e8a081775d6",
+        "type": "switch",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "property": "bitmask",
+        "propertyType": "flow",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "1",
+                "vt": "str"
+            },
+            {
+                "t": "lte",
+                "v": "1",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1210,
+        "y": 1220,
+        "wires": [
+            [
+                "b1dd6d6f65aa2931"
+            ],
+            [
+                "293d79262cd02e40",
+                "1a2eb47fa5802553"
+            ]
+        ]
+    },
+    {
+        "id": "558c1e3cf5360454",
+        "type": "change",
+        "z": "c14dd18d284ce75b",
+        "name": "bitmask 1",
+        "rules": [
+            {
+                "t": "set",
+                "p": "bitmask",
+                "pt": "flow",
+                "to": "1",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1740,
+        "y": 100,
+        "wires": [
+            [
+                "292b72f82ab8f754"
+            ]
+        ]
+    },
+    {
+        "id": "ee69a3d86392334f",
+        "type": "change",
+        "z": "c14dd18d284ce75b",
+        "name": "bitmask 255",
+        "rules": [
+            {
+                "t": "set",
+                "p": "bitmask",
+                "pt": "flow",
+                "to": "255",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1750,
+        "y": 200,
+        "wires": [
+            [
+                "292b72f82ab8f754"
+            ]
+        ]
+    },
+    {
+        "id": "b535db43934fe846",
+        "type": "inject",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 1560,
+        "y": 100,
+        "wires": [
+            [
+                "558c1e3cf5360454"
+            ]
+        ]
+    },
+    {
+        "id": "dd5d060478a075e3",
+        "type": "inject",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 1560,
+        "y": 200,
+        "wires": [
+            [
+                "ee69a3d86392334f"
+            ]
+        ]
+    },
+    {
+        "id": "292b72f82ab8f754",
+        "type": "debug",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1990,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "293d79262cd02e40",
+        "type": "http request",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "https://api.thingspeak.com/update?api_key=U4JR7GM4UMW3EYLA&field2={{payload.nodeID}}&field3={{payload.Temperature}}&field4={{payload.Humidity}}",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "senderr": false,
+        "x": 1650,
+        "y": 1480,
+        "wires": [
+            [
+                "3967d9ecbca1ff89"
+            ]
+        ]
+    },
+    {
+        "id": "3967d9ecbca1ff89",
+        "type": "debug",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1830,
+        "y": 1480,
+        "wires": []
+    },
+    {
+        "id": "1a2eb47fa5802553",
+        "type": "debug",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1330,
+        "y": 1540,
+        "wires": []
+    },
+    {
+        "id": "d4974a15a087070f",
+        "type": "inject",
+        "z": "c14dd18d284ce75b",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"nodeID\":1,\"Humidity\":60.7,\"Temperature\":25.6}",
+        "payloadType": "str",
+        "x": 670,
+        "y": 1300,
+        "wires": [
+            [
+                "7f457d91717e9e0a"
+            ]
+        ]
+    },
+    {
+        "id": "cd387cbbd311b94c",
+        "type": "comment",
+        "z": "c14dd18d284ce75b",
+        "name": "Manual control: bitmask",
+        "info": "",
+        "x": 1580,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "598d5c905e2576fb",
+        "type": "trigger",
+        "z": "c14dd18d284ce75b",
+        "name": "T_cycle - 5s",
+        "op1": "",
+        "op2": "",
+        "op1type": "nul",
+        "op2type": "pay",
+        "duration": "55",
+        "extend": false,
+        "overrideDelay": false,
+        "units": "s",
+        "reset": "",
+        "bytopic": "all",
+        "topic": "topic",
+        "outputs": 1,
+        "x": 1470,
+        "y": 460,
+        "wires": [
+            [
+                "f731e9baa3d7c2d0"
+            ]
+        ]
+    },
+    {
+        "id": "6fff800f.c81fe",
+        "type": "serial-port",
+        "serialport": "/dev/ttyUSB0",
+        "serialbaud": "115200",
+        "databits": "8",
+        "parity": "none",
+        "stopbits": "1",
+        "waitfor": "",
+        "dtr": "none",
+        "rts": "none",
+        "cts": "none",
+        "dsr": "none",
+        "newline": "\\n",
+        "bin": "false",
+        "out": "char",
+        "addchar": "",
+        "responsetimeout": "10000"
+    }
+]
