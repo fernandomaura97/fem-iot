@@ -8,6 +8,7 @@
 #include "dev/dht22.h"
 #include <stdlib.h>
 #include "net/packetbuf.h"
+static uint8_t *buffer_poll;
 
 //#include "sys/energest.h"
 
@@ -388,6 +389,9 @@ PROCESS_THREAD(rx_process,ev,data)
         else if (frame_header ==4) {
             LOG_INFO("Sensor data received??\n"); //not supposed to be hearing these
         }
+
+
+
 
         else if(frame_header ==5){
 

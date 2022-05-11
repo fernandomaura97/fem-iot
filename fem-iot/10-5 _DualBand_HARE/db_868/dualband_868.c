@@ -284,7 +284,8 @@ while(1){
       sprintf(string, "B0, %d, %d, %d\n", datapoint[0], datapoint[1], datapoint[2]);
 
       uart1_send_bytes((uint8_t *)string, sizeof(string) - 1);
-      printf("beacon sent UART\n");
+      printf("beacon sent UART:\t");
+      printf("%s", string);
       } //if_beacon_flag
       
   } //if_frame_header==0
@@ -314,6 +315,7 @@ while(1){
     LOG_DBG("Poll message \n");
     if(is_associated){
       process_poll(&poll_process);
+    }
     else{
       printf("Not associated, ignoring poll\n");
 
@@ -444,7 +446,7 @@ PROCESS_THREAD(associator_process, ev, data){
 
 PROCESS_THREAD(poll_process,ev,data)
 {
-
+  static uint8_t *buffer_poll;
   static clock_time_t time_after_poll; 
 
 

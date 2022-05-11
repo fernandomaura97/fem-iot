@@ -81,6 +81,27 @@ void serial_in(){ // Implementa la lògica a la cadena de caràcters que ha entr
   //flag = 1;  
  
   }
+
+ else if(!srncmp(header, "P0", sizeof("P0")) == 0){ // P0 indicarà al db_24 que el missatge és un poll
+
+  printf("received poll message\n");
+  char *token = strtok(buf_in, delimitador);
+  
+  while(token != NULL){
+      token = strtok(NULL, delimitador);
+      if(i == 0){
+        beacon[0] = atoi(token);
+      }
+      else if(i == 1){
+        beacon[1] = atoi(token);
+      }
+      else if(i == 2){
+        beacon[2] = atoi(token);
+      }
+      i++;
+      }
+ }
+
   printf("Beacon: B0, %d, %d, %d\n", beacon[0], beacon[1], beacon[2]);
 }
 
@@ -158,11 +179,7 @@ PROCESS_THREAD(sender, ev,data){
     nullnet_len = sizeof(beacon);
 
     printf("broadcasting BEACON: %d, %d, %d\n", beacon[0], beacon[1], beacon[2]);
-
     NETSTACK_NETWORK.output(NULL);
-      
-
-  }
+ }
   PROCESS_END();
-
 }
