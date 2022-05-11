@@ -1,4 +1,4 @@
-CONTIKI_PROJECT = dualband_24 sensors_db_24
+CONTIKI_PROJECT = dualband_24 sensors_db_24 node
 
 all: $(CONTIKI_PROJECT)
 
