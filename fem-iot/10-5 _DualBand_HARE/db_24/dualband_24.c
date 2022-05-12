@@ -161,7 +161,7 @@ void input_callback(const void *data, uint16_t len,
 
     //subheader_ag = 0b11100000 & 
     
-    header_rx_msg = bytebuf[0]& 0b00011111);
+    header_rx_msg = (bytebuf[0]& 0b00011111);
     
     
     switch(header_rx_msg) {
@@ -173,7 +173,7 @@ void input_callback(const void *data, uint16_t len,
         case NODEID1:
 
         memcpy(&buffer_aggregation[0], &subheader_ag , sizeof(uint8_t));
-        memcpy(&buffer_aggregation[1], bytebuf[1], 2*sizeof(datas.temperature));
+        memcpy(&buffer_aggregation[1], &bytebuf[1], 2*sizeof(datas.temperature));
         
         case NODEID2: 
 
@@ -290,7 +290,7 @@ while(1)
 {
 
   PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-  LOG_DBG("setting window of rx timer for %lu seconds", WINDOW_SIZE/CLOCK_SECOND);
+  LOG_DBG("setting window of rx timer for %d seconds", WINDOW_SIZE/CLOCK_SECOND);
   flag_rx_window = true; 
   etimer_set(&window_timer, WINDOW_SIZE);
 
