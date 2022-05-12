@@ -57,13 +57,13 @@
 #define T_BEACON (60 * CLOCK_SECOND)
 
 static linkaddr_t from;
-static linkaddr_t coordinator_addr = {{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }};
+static linkaddr_t dualband24_addr = {{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }}; //empty address
 
 //TIMERS 
-static clock_time_t time_until_poll;
+//static clock_time_t time_until_poll;
 static clock_time_t time_of_beacon_rx;
 
-static struct etimer radiotimer;
+//static struct etimer radiotimer;
 static struct etimer next_beacon_etimer;
 //static struct etimer b_timer; 
 static struct etimer asotimer;
@@ -78,7 +78,7 @@ static volatile bool beaconrx_f; //set to 1 if a beacon(out of 3) has been recei
 volatile static uint16_t len_msg;
 volatile static uint8_t bitmask;
 static volatile uint8_t i_buf;
-static uint8_t *buffer_poll;
+
 static uint8_t nodeid;
 
 
@@ -326,7 +326,7 @@ PROCESS_THREAD(rx_process,ev,data)
             if(!beaconrx_f){ //if it's the first beacon received on this cycle
 
                 
-                linkaddr_copy(&coordinator_addr, &from); //store coordinator address
+                linkaddr_copy(&dualband24_addr, &from); //store coordinator address
                 
                 uint8_t Beacon_no = datapoint[0] & 0b00011111;
 
@@ -352,7 +352,7 @@ PROCESS_THREAD(rx_process,ev,data)
                     process_poll(&associator_process);
                 }
                 
-                //we have address in &coordinator_addr, 
+                //we have address in &dualband24_addr, 
             }
             else{
                 
@@ -366,8 +366,8 @@ PROCESS_THREAD(rx_process,ev,data)
         else if(frame_header ==2){ 
             LOG_INFO("Association response received for %d\n", datapoint[1]);
         
-            //if(from == coordinator_addr) {
-            if(linkaddr_cmp(&from, &coordinator_addr)) { 
+            //if(from == dualband24_addr) {
+            if(linkaddr_cmp(&from, &dualband24_addr)) { 
                 LOG_INFO("Not associated, associating now\n");
                 PROCESS_CONTEXT_BEGIN(&associator_process);
                 is_associated = true; 
@@ -380,10 +380,11 @@ PROCESS_THREAD(rx_process,ev,data)
                 
         else if(frame_header ==3) {
             if(is_associated) {
-                process_poll(&poll_process);    
+                //process_poll(&poll_process);    
+                LOG_DBG("received poll message\n");
                 }
             else{
-                printf("I'm not associated!!!!!\n");
+                LOG_ERR("I'm not associated!!!!!\n");
             }
         }
 
@@ -406,91 +407,12 @@ PROCESS_THREAD(rx_process,ev,data)
 
 /*---------------------------------------------------------------------------*/
 
-PROCESS_THREAD(poll_process, ev,data){
-
-    /*static struct mydatas {
-        uint8_t NodeID;
-        int16_t temperature;
-        int16_t hum;
-        float co ;
-        float no2 ;
-        float o3 ;
-        uint32_t noise ; 
-        uint16_t pm10;
-
-    } mydata;
-    mydata.co = 1.23;
-    mydata.no2 = 2.34;
-    mydata.o3 = 3.45;
-    mydata.noise = 4560;
-    mydata.pm10 = 45;
-    mydata.hum = 560;
-    mydata.temperature = 670;
-    */
-    static clock_time_t time_after_poll;
-
-    PROCESS_BEGIN();
-    while(1)
-    {
-        PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-       
-        buffer_poll = packetbuf_dataptr();
-        
-
-        LOG_DBG("POLL frame! Received poll for %d, I am node %d\n",buffer_poll[1], nodeid );
-
-
-        if(buffer_poll[1] == nodeid)
-            {
-            
-            #if COOJA
-                datasender(nodeid);
-            #else
-                m_and_send_dht22(nodeid);
-            #endif
-
-
-                printf("finished sending\n");
-                NETSTACK_RADIO.off();
-                RTIMER_BUSYWAIT(5);
-                time_after_poll = clock_time() - time_of_beacon_rx;
-                printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu\n", T_BEACON - 10*CLOCK_SECOND - time_after_poll/CLOCK_SECOND, clock_time()/CLOCK_SECOND, time_of_beacon_rx/CLOCK_SECOND, time_after_poll/CLOCK_SECOND);
-                etimer_set(&next_beacon_etimer, T_BEACON - 3*CLOCK_SECOND - time_after_poll);
-                printf("still here\n");
-
-
-                PROCESS_WAIT_UNTIL(etimer_expired(&next_beacon_etimer));
-                NETSTACK_RADIO.on();
-                printf("radio back on, beacon in ~2s!!! \n");
-                PROCESS_CONTEXT_BEGIN(&rx_process);
-                beaconrx_f = 0;
-                PROCESS_CONTEXT_END(&rx_process);
-            }
-            else
-            {
-                printf("Error: I'm awake in the %d slot and I am %d \n", buffer_poll[1], nodeid);
-
-                //TOO MUCH
-
-                /* NETSTACK_RADIO.off();
-                PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&next_beacon_etimer));
-                NETSTACK_RADIO.on();
-                printf("radio back on, beacon in ~2s \n");
-                */
-            }
-
-  
-    }
-    PROCESS_END();
-}
 
 PROCESS_THREAD(associator_process, ev,data){
     //static uint8_t nodeid_no;
     static uint8_t buf[2];
     PROCESS_BEGIN();
-
     //nullnet_set_input_callback(input_callback);
-    
     while(1){
 
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL); //wait until beacon 
@@ -498,10 +420,10 @@ PROCESS_THREAD(associator_process, ev,data){
         time_of_beacon_rx = clock_time();
        
 
-        time_until_poll = (T_MDB + ((nodeid - 1) * (T_SLOT + T_GUARD))) - T_GUARD;
-        printf("time until poll is %lu\n", time_until_poll/CLOCK_SECOND);
+        //time_until_poll = (T_MDB + ((nodeid - 1) * (T_SLOT + T_GUARD))) - T_GUARD;
+        //LOG_DBG("time until poll is %lu\n", time_until_poll/CLOCK_SECOND);
 
-        etimer_set(&radiotimer, time_until_poll);
+        //etimer_set(&radiotimer, time_until_poll);
         
         if(!is_associated)
         {   
@@ -527,7 +449,7 @@ PROCESS_THREAD(associator_process, ev,data){
                 if(is_associated ==1 ){break;}
 
                 printf("Sending assoc. Request, tx power: %02x\n", power_levels[i_pwr]);
-                NETSTACK_NETWORK.output(&coordinator_addr);
+                NETSTACK_NETWORK.output(&dualband24_addr);
                 
                                 
             }
@@ -542,8 +464,16 @@ PROCESS_THREAD(associator_process, ev,data){
             printf("bitmask: %02x, nodeid: %d\n", bitmask, nodeid);
             
         }
+
+
+
+
+
+        /*---------------------------------------------------------------------------*/
+        //NO NEED TO WAIT UNTIL POLL TIME
+        /*---------------------------------------------------------------------------*/
         
-        amipolled_f = am_i_polled(bitmask, nodeid);
+        /*amipolled_f = am_i_polled(bitmask, nodeid);
 
         if( amipolled_f == 1){
             printf("I'm transmitting in the %dth slot\n", nodeid);
@@ -573,7 +503,7 @@ PROCESS_THREAD(associator_process, ev,data){
         }   
         amipolled_f = 0; 
         beaconrx_f= 0 ; 
-        
+        */
         //CODE STARTS HERE
     }
 
@@ -581,11 +511,76 @@ PROCESS_THREAD(associator_process, ev,data){
 
 }
 
+PROCESS_THREAD(poll_process, ev,data){
 
-/*
- * This Process will periodically print energest values for the last minute.
- *
- */
+    /*static struct mydatas {
+        uint8_t NodeID;
+        int16_t temperature;
+        int16_t hum;
+        float co ;
+        float no2 ;
+        float o3 ;
+        uint32_t noise ; 
+        uint16_t pm10;
+
+    } mydata;
+    mydata.co = 1.23;
+    mydata.no2 = 2.34;
+    mydata.o3 = 3.45;
+    mydata.noise = 4560;
+    mydata.pm10 = 45;
+    mydata.hum = 560;
+    mydata.temperature = 670;
+    */
+    static clock_time_t time_after_poll;
+
+    PROCESS_BEGIN();
+    while(1)
+    {
+        PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+       
+        #if COOJA
+            datasender(nodeid);
+        #else
+            m_and_send_dht22(nodeid);
+        #endif
+
+
+        printf("finished sending\n");
+        NETSTACK_RADIO.off();
+        RTIMER_BUSYWAIT(5);
+        
+        
+        time_after_poll = clock_time() - time_of_beacon_rx;
+        printf("setting timer for %lu seconds. Time now: %lu, Time of beacon : %lu, dt : %lu\n", T_BEACON - 10*CLOCK_SECOND - time_after_poll/CLOCK_SECOND, clock_time()/CLOCK_SECOND, time_of_beacon_rx/CLOCK_SECOND, time_after_poll/CLOCK_SECOND); // BROKEN: FIXME
+        
+        etimer_set(&next_beacon_etimer, T_BEACON - 3*CLOCK_SECOND - time_after_poll);
+        
+        PROCESS_WAIT_UNTIL(etimer_expired(&next_beacon_etimer));
+        NETSTACK_RADIO.on();
+        
+        LOG_DBG("radio back on, beacon in ~2s!!! \n");
+        PROCESS_CONTEXT_BEGIN(&rx_process);
+        beaconrx_f = 0;
+        PROCESS_CONTEXT_END(&rx_process);
+        //TOO MUCH
+
+        /* NETSTACK_RADIO.off();
+        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&next_beacon_etimer));
+        NETSTACK_RADIO.on();
+        printf("radio back on, beacon in ~2s \n");
+        */
+            
+
+  
+    }
+    PROCESS_END();
+}
+
+
+// This Process will periodically print energest values for the last minute.
+
+
 /*
 PROCESS_THREAD(energest_example_process, ev, data)
 {
