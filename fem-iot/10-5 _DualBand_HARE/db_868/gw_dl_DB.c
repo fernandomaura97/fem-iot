@@ -17,7 +17,7 @@
 
 
 #define LOG_MODULE "App"
-#define LOG_LEVEL LOG_LEVEL_INFO
+#define LOG_LEVEL LOG_LEVEL_DBG
 
 
 #define NODEID_MGAS1 1
@@ -91,10 +91,10 @@ PROCESS(coordinator_process, "fem-iot coordinator process");
 //PROCESS(beacon_process, "beacon process");
 PROCESS(serial_process, "Serial process");
 PROCESS(parser_process, "Parsing process");
-//PROCESS(association_process, "Association process");
+PROCESS(association_process, "Association process");
 PROCESS(callback_process,"Callback process");
 
-AUTOSTART_PROCESSES(&coordinator_process, &parser_process, &callback_process, &serial_process);
+AUTOSTART_PROCESSES(&coordinator_process,&association_process ,&parser_process, &callback_process, &serial_process);
 
 /*---------------------------------------------------------------------------*/
 
@@ -411,7 +411,7 @@ PROCESS_THREAD( parser_process, ev, data)
     PROCESS_END();
 
 }
-/*
+
 PROCESS_THREAD(association_process,ev,data){
 
     uint8_t buf_assoc[2];
@@ -468,7 +468,7 @@ PROCESS_THREAD(association_process,ev,data){
     
     PROCESS_END();
 }
-*/
+
 
 PROCESS_THREAD(callback_process,ev,data){
 
@@ -504,7 +504,7 @@ PROCESS_THREAD(callback_process,ev,data){
         else if( frame ==1){
             LOG_DBG("Association request received (NOT ASSOCIATING )\n");
             linkaddr_copy(&buffer_addr, &from );
-            //process_poll(&association_process);     
+            process_poll(&association_process);     
         }
         else if( frame ==2){
             LOG_DBG("Association response received (!?)\n");
