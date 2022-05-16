@@ -67,7 +67,7 @@ static uint8_t bitmask;
 
 static uint16_t lost_message_counter = 0;
 static bool poll_response_received = 0; 
-//static linkaddr_t addr_stas[ROUTENUMBER]; //store sta's addresses in here, for routing and sending
+static linkaddr_t addr_stas[ROUTENUMBER]; //store sta's addresses in here, for routing and sending
 static linkaddr_t buffer_addr; 
 
 const linkaddr_t addr_empty = {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}; //placeholder address
