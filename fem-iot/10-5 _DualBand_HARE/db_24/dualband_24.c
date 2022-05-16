@@ -30,9 +30,9 @@
 #define LOG_LEVEL LOG_LEVEL_DBG
 
 
-uint8_t buffer_aggregation[100];
+uint8_t buffer_aggregation[12];
 
-static bool flag_rx_window  =false; 
+static volatile bool flag_rx_window  = false; 
 
 
 PROCESS(dualband_24, "dualband 24");
@@ -59,6 +59,17 @@ uint8_t beacon[3];
 const char delimitador[2] = ",";
 long int sortida[3];
 char* endPtr;
+
+static struct aggregator_flags_t
+{
+  bool f_m1;
+  bool f_m2; 
+  //TODO: add more flags if we need more messages included
+}aggregator_flags; 
+
+
+
+
 //static bool flag = 0;
 
 uint16_t counter_uart = 0;
@@ -115,7 +126,6 @@ void serial_in(){ // Implementa la lògica a la cadena de caràcters que ha entr
       
       /* ------------------------------------------------- */
       //SEND "DYNAMICALLY AGGREGATED" DATA TO DB_868 THROUGH UART! 
-
       //
       //
       }
@@ -142,44 +152,45 @@ void input_callback(const void *data, uint16_t len,
   uint8_t* bytebuf;
   bytebuf = malloc(len);
   memcpy(bytebuf, data, len);
-  uint8_t subheader_ag; 
+  
+  //uint8_t subheader_ag; 
+
   uint8_t header_rx_msg;
   if(flag_rx_window == false){
 
   /*-----------------------------------------------------------------------------------------------------------------*/
 
-  //poll_process( &window_process);
+  process_poll( &window_process);
   
   /*window process will be started when the first packet is received
   then it will wait for a window of time (WINDOW_SIZE) and it will set the flag back to 0
   */
-
  /*-----------------------------------------------------------------------------------------------------------------*/
   }
+
   else if(flag_rx_window ==true)
   { 
 
-    //subheader_ag = 0b11100000 & 
-    
     header_rx_msg = (bytebuf[0]& 0b00011111);
-    
-    
+    uint8_t len_little = (uint8_t)len;
     switch(header_rx_msg) {
 
       //let's assume all incoming traffic is DHT22: temp and humidity.
 
-      //    "subheader_ag" refers to the header, composed of the NODEID of the received msg and the size of the data payload. 
+      //    len_little is size of the "submessage", will be useful if buffer is allocated dynamically!
 
         case NODEID1:
 
-        memcpy(&buffer_aggregation[0], &subheader_ag , sizeof(uint8_t));
-        memcpy(&buffer_aggregation[1], &bytebuf[1], 2*sizeof(datas.temperature));
+        memcpy(&buffer_aggregation[0], &header_rx_msg , sizeof(uint8_t));
+        memcpy(&buffer_aggregation[1], &len_little, sizeof(uint8_t));
+        memcpy(&buffer_aggregation[2], &bytebuf[1], 2*sizeof(datas.temperature)); //It will fill bytes 2 to 5 with the temperature data
+        aggregator_flags.f_m1 = true; 
         
         case NODEID2: 
-
-        memcpy(&buffer_aggregation[5], &subheader_ag , sizeof(uint8_t));
-        memcpy(&buffer_aggregation[6], &bytebuf[1], 2*sizeof(int16_t));
-
+        memcpy(&buffer_aggregation[6], &header_rx_msg , sizeof(uint8_t));
+        memcpy(&buffer_aggregation[7], &len_little , sizeof(uint8_t));
+        memcpy(&buffer_aggregation[8], &bytebuf[1], 2*sizeof(int16_t));
+        aggregator_flags.f_m2 = true; 
         case NODEID3: 
         case NODEID4:
         case NODEID5:
@@ -187,6 +198,15 @@ void input_callback(const void *data, uint16_t len,
         case NODEID7:
         case NODEID8:
         LOG_DBG("NODEID: %d???\n", bytebuf[0]& 0b00011111); 
+    }
+    LOG_DBG("Added %d bytes of data from node %d to buffer\n", len, header_rx_msg);
+    
+    if(aggregator_flags.f_m1 && aggregator_flags.f_m2)
+    {
+      aggregator_flags.f_m1 = false;
+      aggregator_flags.f_m2 = false; 
+      LOG_INFO("sending through UART the aggregated msg\n");
+      process_poll(&dualband_24);
     }
   }
 
@@ -221,15 +241,9 @@ PROCESS_THREAD(dualband_24, ev, data){
   while(1){  
     PROCESS_YIELD();
 
-    /*if (flag == 1){
-      flag = 0;
-      nullnet_buf = beacon;
-      nullnet_len = 3;
+    PROCESS_WAIT_EVENT_UNTIL( ev == PROCESS_EVENT_POLL);
+    printf("HIIIIi \n");  //only polled after the aggregated message buffer is full!!
 
-      printf("broadcasting BEACON: %d, %d, %d\n", beacon[0], beacon[1], beacon[2]);
-
-      NETSTACK_NETWORK.output(NULL);
-    }*/
   } 
   PROCESS_END();
 }
@@ -245,19 +259,12 @@ while (1){
 
   LOG_DBG("Receiving RADIO msg...\n");  
 
-
-
    /*
    //DHT22 FORMAT
     buf_dht22[0] = 0b10000000 | id;
     memcpy(&buf_dht22[1], &temperature, sizeof(temperature));
     memcpy(&buf_dht22[3], &humidity, sizeof(humidity));
-   
-   
-
-
-
-
+ 
    */
 }
   //AGGREGATE MESSAGES INTO A DYNAMIC SIZE MESSAGE
@@ -280,26 +287,28 @@ PROCESS_THREAD(sender, ev,data){
  }
   PROCESS_END();
 }
+
+
 PROCESS_THREAD(window_process, ev, data){
 
-static struct etimer window_timer;
+  static struct etimer window_timer;
 
-PROCESS_BEGIN();
+  PROCESS_BEGIN();
 
-while(1)
-{
+  while(1)
+  {
 
-  PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-  LOG_DBG("setting window of rx timer for %d seconds", WINDOW_SIZE/CLOCK_SECOND);
-  flag_rx_window = true; 
-  etimer_set(&window_timer, WINDOW_SIZE);
+    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+    LOG_DBG("setting window of rx timer for %d seconds", WINDOW_SIZE/CLOCK_SECOND);
+    flag_rx_window = true; 
+    etimer_set(&window_timer, WINDOW_SIZE);
 
-  PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&window_timer));
-  flag_rx_window = false;
-  LOG_DBG("window of rx timer expired");
-}
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&window_timer));
+    flag_rx_window = false;
+    LOG_DBG("window of rx timer expired");
+  }
 
 
-PROCESS_END();
+  PROCESS_END();
 
-}
+  }
