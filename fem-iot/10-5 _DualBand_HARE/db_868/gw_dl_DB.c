@@ -110,6 +110,7 @@ void input_callback(const void *data, uint16_t len,
     process_poll(&callback_process);
 }
 
+
 /*--------------------------------------------------------------------------------*/
 
 PROCESS_THREAD(coordinator_process, ev,data)

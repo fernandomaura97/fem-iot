@@ -283,13 +283,7 @@ PROCESS_THREAD( parser_process, ev, data)
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
 
         uint8_t *parsebuf = malloc(cb_len);
-        parsebuf = packetbuf_dataptr(); //THIS NEEDS TO BE TESTED
-        /* 
-        Alternatives:
-            memcpy(parsebuf,data,len); //Do this on the callback
-
-
-        */
+        parsebuf = packetbuf_dataptr(); 
         printf("PARSING\n");
         //switch(buf[0] & 31){
         switch(parsebuf[0]& 0b00011111) //last 5 bits of the first byte is for NodeID?

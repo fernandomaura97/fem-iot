@@ -32,6 +32,7 @@
 
 uint8_t buffer_aggregation[12];
 
+static volatile uint8_t global_buffer[30]; 
 static volatile bool flag_rx_window  = false; 
 
 
@@ -42,6 +43,8 @@ PROCESS(window_process, "RX window process");
 AUTOSTART_PROCESSES(&dualband_24, &sender, &radio_receiver,&window_process);
 /*---------------------------------------------------------------------------*/
 
+static linkaddr_t from; 
+static uint16_t cb_len;
 
 typedef struct data_t{
   int16_t temperature, humidity;
@@ -146,8 +149,20 @@ int print_uart(unsigned char c){
 	return 1;
 }
 //TORNADA
+
+
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest){
+
+
+    from = *src;
+    cb_len = len; //save the lensgth of the received packet
+    packetbuf_copyto(&global_buffer); //copy the received packet to the buffer
+
+    process_poll(&radio_receiver);
+
+
+/*
 
   uint8_t* bytebuf;
   bytebuf = malloc(len);
@@ -156,21 +171,18 @@ void input_callback(const void *data, uint16_t len,
   //uint8_t subheader_ag; 
 
   uint8_t header_rx_msg;
+
   if(flag_rx_window == false){
-
-  /*-----------------------------------------------------------------------------------------------------------------*/
-
   process_poll( &window_process);
-  
-  /*window process will be started when the first packet is received
-  then it will wait for a window of time (WINDOW_SIZE) and it will set the flag back to 0
-  */
- /*-----------------------------------------------------------------------------------------------------------------*/
+  //THIS WILL OPEN THE WINDOW AS LONG AS A MESSAGE IS RECEIVED, WATCH OUT!!!!!!!!!!!!!!!!
+
+  //window process will be started when the first packet is received
+  //then it will wait for a window of time (WINDOW_SIZE) and it will set the flag back to 0
   }
 
   else if(flag_rx_window ==true)
   { 
-
+  
     header_rx_msg = (bytebuf[0]& 0b00011111);
     uint8_t len_little = (uint8_t)len;
     switch(header_rx_msg) {
@@ -208,24 +220,9 @@ void input_callback(const void *data, uint16_t len,
       LOG_INFO("sending through UART the aggregated msg\n");
       process_poll(&dualband_24);
     }
-  }
+  }*/
 
-  /*
-  bytebuf[0] = 0;
-  memcpy(&datas.temperature, &bytebuf[1], sizeof(int16_t));
-  memcpy(&datas.humidity, &bytebuf[3], sizeof(int16_t));
-  memcpy(&datas.noise, &bytebuf[5], sizeof(uint16_t));
 
-  printf("Data sensors:  %d %02d.%02d %02d.%02d %u\n", bytebuf[0], datas.temperature / 10, datas.temperature%10, datas.humidity / 10, datas.humidity % 10, datas.noise);
-  
-  char string[20];
-
-  sprintf(string,"%d %d %d %u\n", bytebuf[0], datas.temperature , datas.humidity, datas.noise);
-  //printf("string sent: %s; END\n", string);
-
-  uart1_send_bytes((uint8_t *)string, sizeof(string) - 1);
-  free(bytebuf);
-  */
 }
 /*---------------------------------------------------------------------------*/
 
