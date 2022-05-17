@@ -156,7 +156,7 @@ void m_and_send_dht22(uint8_t id)
 
     nullnet_buf = (uint8_t *)&buf_dht22;
     nullnet_len = sizeof(buf_dht22);
-    NETSTACK_NETWORK.output(NULL); 
+    NETSTACK_NETWORK.output(&dualband24_addr); 
     
     LOG_DBG("Sending DHT22 data\n");
     SENSORS_DEACTIVATE(dht22);

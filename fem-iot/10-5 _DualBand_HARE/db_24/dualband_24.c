@@ -164,12 +164,12 @@ void input_callback(const void *data, uint16_t len,
     uint8_t * dbgbuf = malloc(len);
 
 
-    memcpy(dbgbuf, data, len);
-    LOG_DBG("Received %u bytes: %d %d %d %d %d\n", len, dbgbuf[0], dbgbuf[1], dbgbuf[2], dbgbuf[3], dbgbuf[4]);  
+    //memcpy(dbgbuf, data, len);
+    //LOG_DBG("Received %u bytes: %d %d %d %d %d\n", len, dbgbuf[0], dbgbuf[1], dbgbuf[2], dbgbuf[3], dbgbuf[4]);  
     
     from = *src;
     cb_len = len; //save the length of the received packet
-    packetbuf_copyto(&global_buffer); //copy the received packet to the buffer
+    //packetbuf_copyto(&global_buffer); //copy the received packet to the buffer
 
     free(dbgbuf);
     process_poll(&radio_receiver);
@@ -188,12 +188,16 @@ PROCESS_THREAD(dualband_24, ev, data){
   uart_set_input(1, print_uart);
 
   while(1){  
-    PROCESS_YIELD();
 
     PROCESS_WAIT_EVENT_UNTIL( ev == PROCESS_EVENT_POLL);
     printf("HIIIIi \n");  //only polled after the aggregated message buffer is full!!
 
+    char sprinter[100];
+    sprintf(sprinter, "P0,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", buffer_aggregation[0], buffer_aggregation[1], buffer_aggregation[2], buffer_aggregation[3], buffer_aggregation[4], buffer_aggregation[5], buffer_aggregation[6], buffer_aggregation[7], buffer_aggregation[8], buffer_aggregation[9], buffer_aggregation[10], buffer_aggregation[11]); 
+   
+    printf("%s", sprinter);
 
+    uart1_send_bytes((unsigned char *)sprinter, strlen(sprinter));
     /*------------------------------------------------------
 
 
@@ -367,6 +371,7 @@ PROCESS_THREAD(association_process, ev, data)
       PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
 
       LOG_DBG("rx messg from nodeid: %d\n", global_buffer[1]);
+      packetbuf_copyto(&global_buffer);
       
       id_rx = global_buffer[1];
 
