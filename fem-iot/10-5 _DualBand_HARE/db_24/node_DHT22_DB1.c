@@ -310,19 +310,19 @@ PROCESS_THREAD(rx_process,ev,data)
     //PROCESS_YIELD();
     while(1)
     {        
-    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-    datapoint = packetbuf_dataptr();
-    //buf[]
+        PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+        datapoint = packetbuf_dataptr();
+        //buf[]
 
-    uint8_t frame_header = (datapoint[0] & 0b11100000) >> 5;
-    bitmask = datapoint[1];
-    //switch(frame_header ) {
+        uint8_t frame_header = (datapoint[0] & 0b11100000) >> 5;
+        bitmask = datapoint[1];
+        //switch(frame_header ) {
 
         if(frame_header ==0){
             printf("Beacon received from address ");
             LOG_INFO_LLADDR(&from);
             printf("\n");
-                       
+                        
             if(!beaconrx_f){ //if it's the first beacon received on this cycle
 
                 
@@ -359,6 +359,7 @@ PROCESS_THREAD(rx_process,ev,data)
                 LOG_INFO("ignoring beacon\n");
             }
         }
+
         else if(frame_header ==1){
             LOG_INFO("Association request received ??\n"); //not supposed to be hearing these
         }
@@ -372,9 +373,11 @@ PROCESS_THREAD(rx_process,ev,data)
                 PROCESS_CONTEXT_BEGIN(&associator_process);
                 is_associated = true; 
                 PROCESS_CONTEXT_END(&associator_process);
+
+                process_poll(&poll_process);
             }
             else{
-               LOG_DBG("error, different adresses");
+                LOG_DBG("error, different adresses");
             }
         }
                 
@@ -463,7 +466,9 @@ PROCESS_THREAD(associator_process, ev,data){
             printf("I'm already associated\n");
             printf("bitmask: %02x, nodeid: %d\n", bitmask, nodeid);
             
+            
         }
+
 
 
 

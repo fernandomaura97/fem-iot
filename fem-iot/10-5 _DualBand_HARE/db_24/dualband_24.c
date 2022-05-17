@@ -161,11 +161,17 @@ int print_uart(unsigned char c){
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest){
 
+    uint8_t * dbgbuf = malloc(len);
 
+
+    memcpy(dbgbuf, data, len);
+    LOG_DBG("Received %u bytes: %d %d %d %d %d\n", len, dbgbuf[0], dbgbuf[1], dbgbuf[2], dbgbuf[3], dbgbuf[4]);  
+    
     from = *src;
     cb_len = len; //save the length of the received packet
     packetbuf_copyto(&global_buffer); //copy the received packet to the buffer
 
+    free(dbgbuf);
     process_poll(&radio_receiver);
 
 
@@ -216,14 +222,15 @@ while (1){
 
 
   
-  bytebuf = malloc(cb_len);    //  !!! WE ALREADY USING GLOBAL_BUFFER (see input_callback) !!!
-  memcpy(bytebuf, data, cb_len);
-  
+  bytebuf = packetbuf_dataptr();
+  //printf("length: %d , \n", cb_len);
    
   frame_header = (bytebuf[0] & 0b11100000)>>5;
+  
   header_rx_msg = (bytebuf[0]& 0b00011111);
   uint8_t len_little = (uint8_t)cb_len;
   
+  printf("header: %d, header_rx_msg: %d, len_little: %d\n", frame_header, header_rx_msg, len_little);
   switch(frame_header){
     case 0: 
       LOG_DBG("RX: Beacon ???? \n");
