@@ -23,6 +23,9 @@
 #define NODEID7 7
 #define NODEID8 8
 
+
+#define ROUTENUMBER 8 //number of routes
+
 #define WINDOW_SIZE (5*CLOCK_SECOND)
 
 
@@ -32,18 +35,22 @@
 
 uint8_t buffer_aggregation[12];
 
-static volatile uint8_t global_buffer[30]; 
+static uint8_t global_buffer[30]; 
 static volatile bool flag_rx_window  = false; 
 
+static linkaddr_t buffer_addr; 
+static linkaddr_t addr_stas[ROUTENUMBER]; //store sta's addresses in here, for routing and sending
 
 PROCESS(dualband_24, "dualband 24");
 PROCESS(sender, "sender");
 PROCESS(radio_receiver, "receiver");
 PROCESS(window_process, "RX window process");
-AUTOSTART_PROCESSES(&dualband_24, &sender, &radio_receiver,&window_process);
+PROCESS(association_process, "assoc process");
+AUTOSTART_PROCESSES(&dualband_24, &sender, &radio_receiver,&window_process, &association_process);
 /*---------------------------------------------------------------------------*/
 
 static linkaddr_t from; 
+const linkaddr_t addr_empty = {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}; //placeholder address
 static uint16_t cb_len;
 
 typedef struct data_t{
@@ -156,71 +163,10 @@ void input_callback(const void *data, uint16_t len,
 
 
     from = *src;
-    cb_len = len; //save the lensgth of the received packet
+    cb_len = len; //save the length of the received packet
     packetbuf_copyto(&global_buffer); //copy the received packet to the buffer
 
     process_poll(&radio_receiver);
-
-
-/*
-
-  uint8_t* bytebuf;
-  bytebuf = malloc(len);
-  memcpy(bytebuf, data, len);
-  
-  //uint8_t subheader_ag; 
-
-  uint8_t header_rx_msg;
-
-  if(flag_rx_window == false){
-  process_poll( &window_process);
-  //THIS WILL OPEN THE WINDOW AS LONG AS A MESSAGE IS RECEIVED, WATCH OUT!!!!!!!!!!!!!!!!
-
-  //window process will be started when the first packet is received
-  //then it will wait for a window of time (WINDOW_SIZE) and it will set the flag back to 0
-  }
-
-  else if(flag_rx_window ==true)
-  { 
-  
-    header_rx_msg = (bytebuf[0]& 0b00011111);
-    uint8_t len_little = (uint8_t)len;
-    switch(header_rx_msg) {
-
-      //let's assume all incoming traffic is DHT22: temp and humidity.
-
-      //    len_little is size of the "submessage", will be useful if buffer is allocated dynamically!
-
-        case NODEID1:
-
-        memcpy(&buffer_aggregation[0], &header_rx_msg , sizeof(uint8_t));
-        memcpy(&buffer_aggregation[1], &len_little, sizeof(uint8_t));
-        memcpy(&buffer_aggregation[2], &bytebuf[1], 2*sizeof(datas.temperature)); //It will fill bytes 2 to 5 with the temperature data
-        aggregator_flags.f_m1 = true; 
-        
-        case NODEID2: 
-        memcpy(&buffer_aggregation[6], &header_rx_msg , sizeof(uint8_t));
-        memcpy(&buffer_aggregation[7], &len_little , sizeof(uint8_t));
-        memcpy(&buffer_aggregation[8], &bytebuf[1], 2*sizeof(int16_t));
-        aggregator_flags.f_m2 = true; 
-        case NODEID3: 
-        case NODEID4:
-        case NODEID5:
-        case NODEID6:
-        case NODEID7:
-        case NODEID8:
-        LOG_DBG("NODEID: %d???\n", bytebuf[0]& 0b00011111); 
-    }
-    LOG_DBG("Added %d bytes of data from node %d to buffer\n", len, header_rx_msg);
-    
-    if(aggregator_flags.f_m1 && aggregator_flags.f_m2)
-    {
-      aggregator_flags.f_m1 = false;
-      aggregator_flags.f_m2 = false; 
-      LOG_INFO("sending through UART the aggregated msg\n");
-      process_poll(&dualband_24);
-    }
-  }*/
 
 
 }
@@ -241,12 +187,24 @@ PROCESS_THREAD(dualband_24, ev, data){
     PROCESS_WAIT_EVENT_UNTIL( ev == PROCESS_EVENT_POLL);
     printf("HIIIIi \n");  //only polled after the aggregated message buffer is full!!
 
+
+    /*------------------------------------------------------
+
+
+    Here send the aggregated buffer to the db_868 through UART
+
+
+    ------------------------------------------------*/
+
   } 
   PROCESS_END();
 }
 
 
 PROCESS_THREAD(radio_receiver, ev, data){
+uint8_t* bytebuf; 
+uint8_t header_rx_msg;
+uint8_t frame_header; 
 
 PROCESS_BEGIN();
 
@@ -256,15 +214,93 @@ while (1){
 
   LOG_DBG("Receiving RADIO msg...\n");  
 
-   /*
-   //DHT22 FORMAT
-    buf_dht22[0] = 0b10000000 | id;
-    memcpy(&buf_dht22[1], &temperature, sizeof(temperature));
-    memcpy(&buf_dht22[3], &humidity, sizeof(humidity));
+
+  
+  bytebuf = malloc(cb_len);    //  !!! WE ALREADY USING GLOBAL_BUFFER (see input_callback) !!!
+  memcpy(bytebuf, data, cb_len);
+  
+   
+  frame_header = (bytebuf[0] & 0b11100000)>>5;
+  header_rx_msg = (bytebuf[0]& 0b00011111);
+  uint8_t len_little = (uint8_t)cb_len;
+  
+  switch(frame_header){
+    case 0: 
+      LOG_DBG("RX: Beacon ???? \n");
+      break;
+    case 1:
+      LOG_DBG("RX: Association request\n");
+
+      linkaddr_copy(&buffer_addr, &from );
+      process_poll(&association_process);     
+      break;
+    case 2: 
+      LOG_DBG("RX: Association response\n");
+      break;
+    case 3: 
+      LOG_DBG("RX: Poll ?????? \n");
+      break;
+    case 4: 
+      LOG_DBG("RX: Sensor Data\n");
+
+      switch(header_rx_msg) {
+        //let's assume all incoming traffic is DHT22: temp and humidity.
+        //    len_little is size of the "submessage", will be useful if buffer is allocated dynamically!
+
+          case NODEID1:
+
+            memcpy(&buffer_aggregation[0], &header_rx_msg , sizeof(uint8_t));
+            memcpy(&buffer_aggregation[1], &len_little, sizeof(uint8_t));
+            memcpy(&buffer_aggregation[2], &bytebuf[1], 2*sizeof(datas.temperature)); //It will fill bytes 2 to 5 with the temperature data
+            aggregator_flags.f_m1 = true; 
+            break;
+            
+          case NODEID2: 
+            memcpy(&buffer_aggregation[6], &header_rx_msg , sizeof(uint8_t));
+            memcpy(&buffer_aggregation[7], &len_little , sizeof(uint8_t));
+            memcpy(&buffer_aggregation[8], &bytebuf[1], 2*sizeof(int16_t));
+            aggregator_flags.f_m2 = true;
+            break; 
+          
+          default:
+            LOG_DBG("NODEID: %d???\n", bytebuf[0]& 0b00011111); 
+            break; 
+
+        }
+         LOG_DBG("Added %d bytes of data from node %d to buffer\n", cb_len, header_rx_msg);
+    
+        if(aggregator_flags.f_m1 && aggregator_flags.f_m2)
+        {
+          aggregator_flags.f_m1 = false;
+          aggregator_flags.f_m2 = false; 
+          LOG_INFO("sending through UART the aggregated msg\n");
+          process_poll(&dualband_24);
+        }
+        break;
+  
+    default: 
+      LOG_DBG("RX: Unknown\n");
+      break;
+    }
+
+  /*if(flag_rx_window == false){
+  process_poll( &window_process);
+  //THIS WILL OPEN THE WINDOW AS LONG AS A MESSAGE IS RECEIVED, WATCH OUT!!!!!!!!!!!!!!!!
+  */
+  //window process will be started when the first packet is received
+  //then it will wait for a window of time (WINDOW_SIZE) and it will set the flag back to 0
+  
+
+  //else if(flag_rx_window ==true)
+  //{ 
+  
+  
+    
+   
  
-   */
-}
-  //AGGREGATE MESSAGES INTO A DYNAMIC SIZE MESSAGE
+  } //while
+
+  //TODO: AGGREGATE MESSAGES INTO A DYNAMIC SIZE MESSAGE
 PROCESS_END();
 
 }
@@ -308,4 +344,61 @@ PROCESS_THREAD(window_process, ev, data){
 
   PROCESS_END();
 
-  }
+}
+
+PROCESS_THREAD(association_process, ev, data)
+{
+  uint8_t buf_assoc[2];
+  static uint8_t id_rx;
+  uint8_t i;
+  uint8_t oldaddr = 0; 
+  
+  PROCESS_BEGIN();
+  
+  while(1){
+
+      PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+
+      LOG_DBG("rx messg from nodeid: %d\n", global_buffer[1]);
+      
+      id_rx = global_buffer[1];
+
+
+      for (i= 0; i<ROUTENUMBER; i++){
+          //if (addr_stas[i] == *buffer_addr){
+
+          if (linkaddr_cmp(&addr_stas[i], &buffer_addr)){ //if they are the same then
+            oldaddr = 1;
+            printf("Address already found at pos %d\n", i);
+            break;     
+          }   //if we have this address in our list, we don't need to add it again                
+      }
+      if(!oldaddr){
+          
+          for(i = 0; i<ROUTENUMBER; i++){
+
+              if(linkaddr_cmp(&addr_stas[i], &addr_empty))
+                  {
+                  linkaddr_copy(&addr_stas[i], &buffer_addr); //if we don't have it, add it
+                  printf("Address ");
+                  LOG_INFO_LLADDR(&buffer_addr);
+                  printf(" added at pos %d\n", i);
+
+                  buf_assoc[0] = 0b01000000;
+                  buf_assoc[1] = id_rx;
+
+                  nullnet_buf = (uint8_t*)&buf_assoc;
+                  nullnet_len = sizeof(buf_assoc);
+
+                  NETSTACK_NETWORK.output(&buffer_addr);
+                  printf("Association message sent to node %d\n", id_rx);
+                  break;
+                  //oldaddr = 1;     
+                  }
+          }
+      }
+
+    }//while
+    
+    PROCESS_END();
+}
