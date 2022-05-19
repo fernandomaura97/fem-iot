@@ -102,7 +102,7 @@ void serial_in(){ // Implementa la lògica a la cadena de caràcters que ha entr
     char buffer_header[20];
     strcpy(buffer_header, buf_in);
     char *header; 
-    header = strtok(buffer_header, delimitador); //agafem només "B0"
+    header = strtok(buffer_header, delimitador); //agafem només "B0", "P0", etc
 
     if (!strncmp(header, "BO", sizeof("B0")) == 0){ // B0 indicarà al db_24 que el missatge és beacon
 
@@ -198,12 +198,9 @@ PROCESS_THREAD(dualband_24, ev, data){
     printf("%s", sprinter);
 
     uart1_send_bytes((unsigned char *)sprinter, strlen(sprinter));
+
     /*------------------------------------------------------
-
-
     Here send the aggregated buffer to the db_868 through UART
-
-
     ------------------------------------------------*/
 
   } 
@@ -256,7 +253,7 @@ while (1){
 
       switch(header_rx_msg) {
         //let's assume all incoming traffic is DHT22: temp and humidity.
-        //    len_little is size of the "submessage", will be useful if buffer is allocated dynamically!
+        //    len_little is size of the "submessage", will be useful later if buffer is to be allocated dynamically!
 
           case NODEID1:
 
@@ -276,7 +273,6 @@ while (1){
           default:
             LOG_DBG("NODEID: %d???\n", bytebuf[0]& 0b00011111); 
             break; 
-
         }
          LOG_DBG("Added %d bytes of data from node %d to buffer\n", cb_len, header_rx_msg);
     

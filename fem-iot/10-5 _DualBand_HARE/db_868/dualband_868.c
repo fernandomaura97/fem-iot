@@ -201,12 +201,12 @@ PROCESS_THREAD(dualband_868, ev, data){
   while(1){
         
       
-      PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+      PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL); //Fins que no arribi un missatge UART, espera
 
       nullnet_buf = (uint8_t *) &buffer;
       nullnet_len = sizeof(buffer);
 
-      NETSTACK_NETWORK.output(NULL);
+      //NETSTACK_NETWORK.output(NULL);
       printf("Data sensors surt: %d %02d.%02d %02d.%02d %u\n", buffer[0], datas.temperature / 10, datas.temperature%10, datas.humidity / 10, datas.humidity % 10, datas.noise);
 
       }
@@ -220,12 +220,9 @@ static struct etimer beacon_no_timer;
 volatile static uint8_t* datapoint;
 PROCESS_BEGIN();
 
-
-
-
 while(1){
 
-  PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+  PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL); //Fins que no arribi un missatge Ràdio, espera
 
   datapoint = malloc(len_msg);
   datapoint = packetbuf_dataptr();
@@ -351,10 +348,8 @@ PROCESS_THREAD(associator_process, ev, data){
   static uint8_t i_pwr;
   PROCESS_BEGIN();
 
-
-
   while(1){
-    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL); //Espera fins que arribi un missatge d'associació
 
     time_of_beacon_rx = RTIMER_NOW();
 
@@ -391,6 +386,7 @@ PROCESS_THREAD(associator_process, ev, data){
         
 
         printf("Sending assoc. Request, tx power: %02x\n", power_levels[i_pwr]);
+     
         //LOG_INFO_LLADDR(&gw_addr);
         NETSTACK_NETWORK.output(&gw_addr);  
 
@@ -400,6 +396,13 @@ PROCESS_THREAD(associator_process, ev, data){
       if(!is_associated) 
       {
           printf("I'm STILL not associated!!\n");
+
+          /*
+
+          Try to associate again here
+
+
+          */
       }
 
       else //if is associated
@@ -407,7 +410,7 @@ PROCESS_THREAD(associator_process, ev, data){
             printf("I'm already associated\n");
             printf("bitmask: %02x, nodeid: %d\n", bitmask, nodeid);
         }
-      } //if_!is_associated
+      } //if !is_associated
 
 
       /*----------------------------------------------------------------------------------------*/
@@ -451,11 +454,10 @@ PROCESS_THREAD(poll_process,ev,data)
 
 
   PROCESS_BEGIN();
-  PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+  PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL); //Espera que arribi un missatge demanant dades de sensors
   printf("polling\n");
 
   /*
-
   //Routine to be executed when we get a poll for the sensors: 
 
   //IF associated, data UART in is ok, send to gateway in the correct slot. 

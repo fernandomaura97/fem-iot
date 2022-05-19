@@ -489,7 +489,7 @@ PROCESS_THREAD(callback_process,ev,data){
         uint8_t temp_array[2];
         } ua2;
     uint8_t *buf;
-    uint8_t frame; 
+    static uint8_t frame; 
     PROCESS_BEGIN();
 
 
@@ -497,10 +497,14 @@ PROCESS_THREAD(callback_process,ev,data){
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
         //buf = (uint8_t *)malloc(cb_len);
         buf = packetbuf_dataptr();
+
+        printf("buf %d %d %d\n", buf[0], buf[1], buf[2]);
         frame = (buf[0] & 0b11100000)>>5;
         
         if (frame == 0){
-            LOG_DBG("Beacon received ??\n");
+            LOG_DBG("Beacon received ??\n %d %d %d \n", buf[0], buf[1], buf[2]);
+            LOG_INFO_LLADDR(&from);
+            LOG_DBG("\n");
         }
         else if( frame ==1){
             LOG_DBG("Association request received (NOT ASSOCIATING )\n");
