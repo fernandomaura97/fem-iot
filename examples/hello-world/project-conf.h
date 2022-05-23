@@ -33,15 +33,6 @@
 #define PROJECT_CONF_H_
 /*---------------------------------------------------------------------------*/
 
-#define LOG_CONF_LEVEL_IPV6                        LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_RPL                         LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_6LOWPAN                     LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_TCPIP                       LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_MAC                         LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_FRAMER                      LOG_LEVEL_DBG
-
-#define ZOUL_CONF_USE_CC1200_RADIO          1
-#define IEEE802154_CONF_DEFAULT_CHANNEL     2
 
 /*
 #undef  NETSTACK_CONF_RADIO
