@@ -1,0 +1,12 @@
+
+#ifndef PROJECT_CONF_H_
+#define PROJECT_CONF_H_
+/*---------------------------*/
+#define IEEE802154_CONF_DEFAULT_CHANNEL 10
+
+#define MOTION_SENSOR_PORT GPIO_A_NUM
+#define MOTION_SENSOR_PIN 5
+#define MOTION_SENSOR_VECTOR GPIO_A_IRQn
+
+
+#endif /* PROJECT_CONF_H_ */
