@@ -20,18 +20,19 @@
 #define LOG_LEVEL LOG_LEVEL_DBG
 
 
-#define NODEID_MGAS1 1
+#define NODEID_STATIC 1
 #define NODEID_DHT22_1 2
-#define NODEID_MGAS2 3
-#define NODEID_DHT22_2 4
+#define NODEID_DHT22_2 3
+#define NODEID_MGAS1 4 ///CUIDADO!!!!
+#define NODEID_MGAS2 4
 #define NODEID_O3_1 5
 #define NODEID_O3_2 6
 #define NODEID_PM10_1 7
 #define NODEID_PM10_2 8
 
 
-
-typedef struct sensor_dataold_t {
+//placeholder struct for the data of the sensors: 
+typedef struct sensor_data_t {
   uint8_t nodeid;
   int16_t humidity;
   int16_t temperature;
@@ -40,27 +41,8 @@ typedef struct sensor_dataold_t {
   float o3;
   float co;
   float no2;
-} sensor_dataold_t;
-static sensor_dataold_t sensors;
-
-typedef struct sensor_data_t {  
-          uint8_t id1;
-          uint8_t length1;
-          int16_t value_temperature1;
-          int16_t value_humidity1;
-
-          uint8_t id2;
-          uint8_t length2;
-          int16_t value_temperature2;
-          int16_t value_humidity2;
-          
-          } sensor_data_t;
-
-static struct sensor_data_t sensor_data;
-
-
-
-
+} sensor_data_t;
+static sensor_data_t sensors;
 static uint16_t cb_len;
 static linkaddr_t from; 
 
@@ -113,7 +95,7 @@ PROCESS(serial_process, "Serial process");
 PROCESS(association_process, "Association process");
 PROCESS(callback_process,"Callback process");
 
-AUTOSTART_PROCESSES(&coordinator_process,&association_process , &callback_process, &serial_process);
+AUTOSTART_PROCESSES(&coordinator_process, &association_process, &callback_process, &serial_process);
 
 /*---------------------------------------------------------------------------*/
 
@@ -128,7 +110,6 @@ void input_callback(const void *data, uint16_t len,
 
     process_poll(&callback_process);
 }
-
 
 /*--------------------------------------------------------------------------------*/
 
@@ -170,7 +151,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
     {
         LOG_DBG("Bitmask is %d\n", bitmask);
         printf("AA0\n"); //NODE-RED HEARTBEAT
-        printf("LMC,%d",lost_message_counter);
+        printf("LMC,%d\n",lost_message_counter);
         etimer_set(&beacon_timer, BEACON_INTERVAL); //set the timer for the next interval
         
         static uint8_t i;
@@ -234,7 +215,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
                     if(i<3){ //if we are in the first 3 nodes, account for error ( ONLY FOR TEST WITH 3 NODES)
 
                         LOG_INFO("ERROR: POLL no RESPONSE!!\n");
-                        lost_message_counter ++;
+                        lost_message_counter++;
                     }
                     else{
                         LOG_INFO("no response(EXPECTED) \n");
@@ -272,6 +253,8 @@ PROCESS_THREAD(coordinator_process, ev,data)
 }
 
 /*-----------------------------------------------------------------------------------------*/
+
+
 
 
 PROCESS_THREAD(association_process,ev,data){
@@ -331,56 +314,47 @@ PROCESS_THREAD(association_process,ev,data){
     PROCESS_END();
 }
 
-
 PROCESS_THREAD(callback_process,ev,data){
 
-    uint32_t fbuf; //float buffer
+     uint32_t fbuf; //float buffer
     union {
         float float_variable;
         uint8_t temp_array[4];
         } u;
   
-    /*    union{
+  /*  union{
         uint32_t u32_var;
         uint8_t temp_array[4];
         } ua;
-    */
+*/
     union{
         int16_t u16_var;
         uint8_t temp_array[2];
         } ua2;
-    
-    static uint8_t frame; 
-    static uint8_t *buf; 
+    uint8_t *buf;
+    uint8_t frame; 
     PROCESS_BEGIN();
 
 
     while(1) {      
-
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-        
-
-        //buf = (uint8_t*)malloc(cb_len);
-        buf = packetbuf_dataptr(); //THIS NEEDS TO BE TESTED
-
-        LOG_DBG("buf %d %d %d\n", buf[0], buf[1], buf[2]);
+        //buf = (uint8_t *)malloc(cb_len);
+        buf = packetbuf_dataptr();
         frame = (buf[0] & 0b11100000)>>5;
         
         if (frame == 0){
-            LOG_DBG("Beacon received ??\n %d %d %d \n", buf[0], buf[1], buf[2]);
-            LOG_INFO_LLADDR(&from);
-            LOG_DBG("\n");
+            LOG_DBG("Beacon received ??\n");
         }
         else if( frame ==1){
-            LOG_DBG("Association request received (NOT ASSOCIATING )\n");
+            LOG_DBG("Association request received\n");
             linkaddr_copy(&buffer_addr, &from );
             process_poll(&association_process);     
         }
         else if( frame ==2){
-            LOG_DBG("Association response received (!?)\n");
+            LOG_DBG("Association response received ??\n");
         }
         else if( frame ==3){
-            LOG_DBG("Poll request received (!?) \n");
+            LOG_DBG("Poll request received ?? \n");
         }
         else if( frame ==4){
             LOG_DBG("Sensor Data received\n");
@@ -389,8 +363,10 @@ PROCESS_THREAD(callback_process,ev,data){
                     printf("PARSING\n");
                     //switch(buf[0] & 31){
                     switch(buf[0] & 0b00011111) //last 5 bits of the first byte is for NodeID?
-                    {
-                        case NODEID_MGAS1:
+                    {   
+
+                                               
+                        //case NODEID_MGAS1:
                         case NODEID_MGAS2:
                                     
                         u.temp_array[0] = buf[1];
@@ -418,30 +394,31 @@ PROCESS_THREAD(callback_process,ev,data){
                         break;
 
 
-
+                    case NODEID_STATIC:
                     case NODEID_DHT22_1:
                     case NODEID_DHT22_2:
                     
 
-                        memcpy(&sensor_data.id1, &buf[0], sizeof(buf[0]));
-                        memcpy(&sensor_data.length1, &buf[1], sizeof(buf[1]));
-                        memcpy(&sensor_data.value_temperature1, &buf[2], sizeof(buf[2]));
-                        memcpy(&sensor_data.value_humidity1, &buf[4], sizeof(buf[4]));
-                    
-                        memcpy(&sensor_data.id2, &buf[6], sizeof(buf[6]));
-                        memcpy(&sensor_data.length2, &buf[7], sizeof(buf[7]));
-                        memcpy(&sensor_data.value_temperature2, &buf[8], sizeof(buf[8]));
-                        memcpy(&sensor_data.value_humidity2, &buf[10], sizeof(buf[10]));
-
-                        printf("ID1: %d\n", sensor_data.id1);
-                        printf("Length1: %d\n", sensor_data.length1);
-                        printf("Value_temperature1: %02d.%02d\n", (sensor_data.value_temperature1)/10, (sensor_data.value_temperature1)%10);
-                        printf("Value_humidity1: %02d.%02d\n", (sensor_data.value_humidity1)/10, (sensor_data.value_humidity1)%10);
+                        ua2.temp_array[0] = buf[1];
+                        ua2.temp_array[1] = buf[2];
                         
-                        printf("ID2: %d\n", sensor_data.id2);
-                        printf("Length2: %d\n", sensor_data.length2);
-                        printf("Value_temperature2: %02d.%02d\n", (sensor_data.value_temperature2)/10, (sensor_data.value_temperature2)%10);
-                        printf("Value_humidity2: %02d.%02d\n", (sensor_data.value_humidity2)/10, (sensor_data.value_humidity2)%10);
+                        memcpy(&sensors.temperature, &ua2.u16_var, sizeof(int16_t)); 
+                    
+
+                        ua2.temp_array[0] = buf[3];
+                        ua2.temp_array[1] = buf[4];
+                        memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
+
+                    
+                        printf("{\"nodeID\": %d", buf[0] & 0b00011111);
+                        printf(",\"Humidity\": %d.%d",  sensors.humidity/10, sensors.humidity%10);
+                        printf(",\"Temperature\": %d.%d""}\n",  sensors.temperature/10, sensors.temperature%10);
+
+                        if((buf[0] & 0b00011111)== NODEID_DHT22_2){
+
+
+                            
+                        }
                     
                         break;
                         
@@ -524,15 +501,15 @@ PROCESS_THREAD(serial_process, ev, data)
     if(ev == serial_line_event_message) {      // Si l'event indica que ha arribat un missatge UART
       leds_toggle(LEDS_RED);
       rxdata = data;                           // Guardem el missatge a rxdata
-      LOG_DBG("Data received over UART: %s\n", rxdata);    //Mostrem el missatge rebut.
+      printf("Data received over UART: %s\n", rxdata);    //Mostrem el missatge rebut.
       leds_toggle(LEDS_RED); 
 
       char buffer_header[30];
       strcpy(buffer_header, rxdata);
-      LOG_DBG("buffer header: %s\n", buffer_header);
+      printf("buffer header: %s\n", buffer_header);
       char *header; 
       header = strtok(buffer_header, ",");
-      LOG_DBG("header: %s\n", header);
+      printf("header: %s\n", header);
 
 
 

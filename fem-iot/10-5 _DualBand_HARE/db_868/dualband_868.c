@@ -68,8 +68,9 @@ const uint8_t power_levels[3] = {0x46, 0x71, 0x7F}; // 0dB, 8dB, 14dB
 
 volatile static uint16_t len_msg;
 static volatile  bool is_associated = 0; // flag to check if the node is associated
-
+static volatile bool uart_rx_flag = false; // flag to check if the node has received a messagesss
 static linkaddr_t from, gw_addr; 
+
 //static bool flag = 0;  
 
 uint8_t am_i_polled(uint8_t bitmask, uint8_t id)  //prints which nodes the beacon is polling, and if it's own NODEID return position of poll
@@ -144,21 +145,20 @@ void serial_in(){
     char *token = strtok(copy_buffer, delimitador);
     uint8_t buffer_aggregated[12];
 
-    printf("token: %s\n", token);
-    if (!strncmp(token, "P0", sizeof("P0")) == 0){
+    LOG_DBG("token: %s\n", token);
+    if (strncmp(token, "P0", sizeof("P0")) == 0){
       int i=0;
       while(token != NULL) {
           // printf("token: %s \n", token);
           token = strtok(NULL, delimitador);
           buffer_aggregated[i] = atoi(token);
-          printf("buffer_aggregated[%d]: %d\n ", i, buffer_aggregated[i]);
+          LOG_DBG("buffer_aggregated[%d]: %d\n ", i, buffer_aggregated[i]);
           i++;
           if(i==12){break;}
 
       }//while
       memcpy(global_ag_buf, buffer_aggregated, 12);
-      process_poll(&dualband_868);
-
+      uart_rx_flag = true; 
     } //if
     else{
       LOG_DBG("unrecognised header\n");
@@ -196,12 +196,12 @@ PROCESS_THREAD(dualband_868, ev, data){
         
       
       PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL); //Fins que no arribi un missatge UART, espera
-
+/*
       nullnet_buf = (uint8_t *) &global_ag_buf;
       nullnet_len = sizeof(global_ag_buf);
 
       LOG_DBG("Sending aggregated data: %d %d %d %d %d %d %d %d %d %d %d %d\n", global_ag_buf[0], global_ag_buf[1], global_ag_buf[2], global_ag_buf[3], global_ag_buf[4], global_ag_buf[5], global_ag_buf[6], global_ag_buf[7], global_ag_buf[8], global_ag_buf[9], global_ag_buf[10], global_ag_buf[11]);
-      NETSTACK_NETWORK.output(NULL);
+      NETSTACK_NETWORK.output(NULL);*/
       //printf("Data sensors surt: %d %02d.%02d %02d.%02d %u\n", buffer[0], datas.temperature / 10, datas.temperature%10, datas.humidity / 10, datas.humidity % 10, datas.noise);
 
       }
@@ -471,7 +471,17 @@ PROCESS_THREAD(poll_process,ev,data)
 
 
 
+    if(uart_rx_flag == true){
 
+      nullnet_buf = (uint8_t *) &global_ag_buf;
+      nullnet_len = sizeof(global_ag_buf);
+
+      LOG_DBG("Sending aggregated data: %d %d %d %d %d %d %d %d %d %d %d %d\n", global_ag_buf[0], global_ag_buf[1], global_ag_buf[2], global_ag_buf[3], global_ag_buf[4], global_ag_buf[5], global_ag_buf[6], global_ag_buf[7], global_ag_buf[8], global_ag_buf[9], global_ag_buf[10], global_ag_buf[11]);
+      NETSTACK_NETWORK.output(NULL);
+    }
+    else{
+      LOG_DBG("Didn't receive a UART packet!!!\n");
+    }
     
     //if(data_uart_in_ok())
     //{

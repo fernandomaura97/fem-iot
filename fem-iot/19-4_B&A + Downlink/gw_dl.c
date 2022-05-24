@@ -17,7 +17,7 @@
 
 
 #define LOG_MODULE "App"
-#define LOG_LEVEL LOG_LEVEL_DBG
+#define LOG_LEVEL LOG_LEVEL_INFO
 
 
 #define NODEID_MGAS1 1
@@ -30,8 +30,8 @@
 #define NODEID_PM10_2 8
 
 
-
-typedef struct sensor_dataold_t {
+//placeholder struct for the data of the sensors: 
+typedef struct sensor_data_t {
   uint8_t nodeid;
   int16_t humidity;
   int16_t temperature;
@@ -40,27 +40,8 @@ typedef struct sensor_dataold_t {
   float o3;
   float co;
   float no2;
-} sensor_dataold_t;
-static sensor_dataold_t sensors;
-
-typedef struct sensor_data_t {  
-          uint8_t id1;
-          uint8_t length1;
-          int16_t value_temperature1;
-          int16_t value_humidity1;
-
-          uint8_t id2;
-          uint8_t length2;
-          int16_t value_temperature2;
-          int16_t value_humidity2;
-          
-          } sensor_data_t;
-
-static struct sensor_data_t sensor_data;
-
-
-
-
+} sensor_data_t;
+static sensor_data_t sensors;
 static uint16_t cb_len;
 static linkaddr_t from; 
 
@@ -109,11 +90,11 @@ uint8_t global_buffer[20];
 PROCESS(coordinator_process, "fem-iot coordinator process");
 //PROCESS(beacon_process, "beacon process");
 PROCESS(serial_process, "Serial process");
-//PROCESS(parser_process, "Parsing process");
+PROCESS(parser_process, "Parsing process");
 PROCESS(association_process, "Association process");
 PROCESS(callback_process,"Callback process");
 
-AUTOSTART_PROCESSES(&coordinator_process,&association_process , &callback_process, &serial_process);
+AUTOSTART_PROCESSES(&coordinator_process, &parser_process, &association_process, &callback_process, &serial_process);
 
 /*---------------------------------------------------------------------------*/
 
@@ -128,7 +109,6 @@ void input_callback(const void *data, uint16_t len,
 
     process_poll(&callback_process);
 }
-
 
 /*--------------------------------------------------------------------------------*/
 
@@ -273,6 +253,158 @@ PROCESS_THREAD(coordinator_process, ev,data)
 
 /*-----------------------------------------------------------------------------------------*/
 
+PROCESS_THREAD( parser_process, ev, data)
+{
+    PROCESS_BEGIN();
+
+
+    uint32_t fbuf; //float buffer
+    union {
+        float float_variable;
+        uint8_t temp_array[4];
+        } u;
+  
+    union{
+        uint32_t u32_var;
+        uint8_t temp_array[4];
+        } ua;
+
+    union{
+        int16_t u16_var;
+        uint8_t temp_array[2];
+        } ua2;
+
+
+    //variables
+    while(1){
+
+        PROCESS_YIELD();
+
+        PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+
+        uint8_t *parsebuf = malloc(cb_len);
+        parsebuf = packetbuf_dataptr(); 
+        printf("PARSING\n");
+        //switch(buf[0] & 31){
+        switch(parsebuf[0]& 0b00011111) //last 5 bits of the first byte is for NodeID?
+        { 
+            case NODEID_MGAS1: //1
+            case NODEID_MGAS2: //3
+                        
+            u.temp_array[0] = parsebuf[1];
+            u.temp_array[1] = parsebuf[2];
+            u.temp_array[2] = parsebuf[3];
+            u.temp_array[3] = parsebuf[4];
+            sensors.co = u.float_variable;
+           
+
+            u.temp_array[0] = parsebuf[5];
+            u.temp_array[1] = parsebuf[6];
+            u.temp_array[2] = parsebuf[7];
+            u.temp_array[3] = parsebuf[8];
+            sensors.no2 = u.float_variable;
+
+
+            printf("{\"nodeID\": %d", parsebuf[0]);
+            printf(",\"co\": ");
+            fbuf = sensors.co * 100;
+            printf("%lu.%02lu", fbuf/100, fbuf%100);
+            printf(", \"no2\": ");
+            fbuf = sensors.no2 * 100;
+            printf("%lu.%02lu", fbuf/100, fbuf%100);
+            printf("}\n");    
+            break;
+
+
+
+        case NODEID_DHT22_1: //2
+        case NODEID_DHT22_2: //4
+        
+
+            ua2.temp_array[0] = parsebuf[1];
+            ua2.temp_array[1] = parsebuf[2];
+            
+            memcpy(&sensors.temperature, &ua2.u16_var, sizeof(int16_t)); 
+        
+
+            ua2.temp_array[0] = parsebuf[3];
+            ua2.temp_array[1] = parsebuf[4];
+            memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
+        
+            ua.temp_array[0] = parsebuf[5];
+            ua.temp_array[1] = parsebuf[6];
+            ua.temp_array[2] = parsebuf[7];
+            ua.temp_array[3] = parsebuf[8];
+
+            memcpy(&sensors.noise, &ua.u32_var, sizeof(uint32_t));
+
+           
+            printf("{\"nodeID\": %d", parsebuf[0]);
+            printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
+            printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
+            printf(",\"Noise\": %lu", sensors.noise);
+            printf("}\n");
+
+           
+            break;
+            
+        case NODEID_O3_1:
+        case NODEID_O3_2:
+            
+            ua2.temp_array[0] = parsebuf[1];
+            ua2.temp_array[1] = parsebuf[2];
+            
+            memcpy(&sensors.temperature, &ua2.u16_var, sizeof(int16_t)); 
+        
+
+            ua2.temp_array[0] = parsebuf[3];
+            ua2.temp_array[1] = parsebuf[4];
+            memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
+
+            u.temp_array[0] = parsebuf[5];
+            u.temp_array[1] = parsebuf[6];
+            u.temp_array[2] = parsebuf[7];
+            u.temp_array[3] = parsebuf[8];
+            
+           
+            memcpy(&sensors.o3, &u.float_variable, sizeof(float));
+            fbuf = sensors.o3 * 100;
+            
+
+
+            printf("{\"nodeID\": %d", parsebuf[0]);
+            printf(",\"ppm\": ");
+            printf("%lu.%02lu", fbuf/100, fbuf%100);
+           
+            printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
+            printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
+            printf("}\n");
+            break;
+        case NODEID_PM10_1:
+        case NODEID_PM10_2:
+           
+            sensors.pm10 = (parsebuf[2] << 8) | parsebuf[1];
+            printf("{\"nodeID\": %d", parsebuf[0]);
+            printf(",\"pm10\": %d", sensors.pm10);
+            printf("}\n");
+            break;
+            //AOK!!
+        
+        default:
+            /*printf("unknown nodeID %d\n", parsebuf[0]);
+            printf("BYTES copied are: ");
+            for (int i = 0; i < len; i++) {
+            printf("%d ", parsebuf[i]);
+            */        
+            break;
+        } //switch
+    
+        free(parsebuf);
+    } //while
+
+    PROCESS_END();
+
+}
 
 PROCESS_THREAD(association_process,ev,data){
 
@@ -331,56 +463,47 @@ PROCESS_THREAD(association_process,ev,data){
     PROCESS_END();
 }
 
-
 PROCESS_THREAD(callback_process,ev,data){
 
-    uint32_t fbuf; //float buffer
+     uint32_t fbuf; //float buffer
     union {
         float float_variable;
         uint8_t temp_array[4];
         } u;
   
-    /*    union{
+    union{
         uint32_t u32_var;
         uint8_t temp_array[4];
         } ua;
-    */
+
     union{
         int16_t u16_var;
         uint8_t temp_array[2];
         } ua2;
-    
-    static uint8_t frame; 
-    static uint8_t *buf; 
+    uint8_t *buf;
+    uint8_t frame; 
     PROCESS_BEGIN();
 
 
     while(1) {      
-
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-        
-
-        //buf = (uint8_t*)malloc(cb_len);
-        buf = packetbuf_dataptr(); //THIS NEEDS TO BE TESTED
-
-        LOG_DBG("buf %d %d %d\n", buf[0], buf[1], buf[2]);
+        //buf = (uint8_t *)malloc(cb_len);
+        buf = packetbuf_dataptr();
         frame = (buf[0] & 0b11100000)>>5;
         
         if (frame == 0){
-            LOG_DBG("Beacon received ??\n %d %d %d \n", buf[0], buf[1], buf[2]);
-            LOG_INFO_LLADDR(&from);
-            LOG_DBG("\n");
+            LOG_DBG("Beacon received ??\n");
         }
         else if( frame ==1){
-            LOG_DBG("Association request received (NOT ASSOCIATING )\n");
+            LOG_DBG("Association request received\n");
             linkaddr_copy(&buffer_addr, &from );
             process_poll(&association_process);     
         }
         else if( frame ==2){
-            LOG_DBG("Association response received (!?)\n");
+            LOG_DBG("Association response received ??\n");
         }
         else if( frame ==3){
-            LOG_DBG("Poll request received (!?) \n");
+            LOG_DBG("Poll request received ?? \n");
         }
         else if( frame ==4){
             LOG_DBG("Sensor Data received\n");
@@ -423,25 +546,30 @@ PROCESS_THREAD(callback_process,ev,data){
                     case NODEID_DHT22_2:
                     
 
-                        memcpy(&sensor_data.id1, &buf[0], sizeof(buf[0]));
-                        memcpy(&sensor_data.length1, &buf[1], sizeof(buf[1]));
-                        memcpy(&sensor_data.value_temperature1, &buf[2], sizeof(buf[2]));
-                        memcpy(&sensor_data.value_humidity1, &buf[4], sizeof(buf[4]));
-                    
-                        memcpy(&sensor_data.id2, &buf[6], sizeof(buf[6]));
-                        memcpy(&sensor_data.length2, &buf[7], sizeof(buf[7]));
-                        memcpy(&sensor_data.value_temperature2, &buf[8], sizeof(buf[8]));
-                        memcpy(&sensor_data.value_humidity2, &buf[10], sizeof(buf[10]));
-
-                        printf("ID1: %d\n", sensor_data.id1);
-                        printf("Length1: %d\n", sensor_data.length1);
-                        printf("Value_temperature1: %02d.%02d\n", (sensor_data.value_temperature1)/10, (sensor_data.value_temperature1)%10);
-                        printf("Value_humidity1: %02d.%02d\n", (sensor_data.value_humidity1)/10, (sensor_data.value_humidity1)%10);
+                        ua2.temp_array[0] = buf[1];
+                        ua2.temp_array[1] = buf[2];
                         
-                        printf("ID2: %d\n", sensor_data.id2);
-                        printf("Length2: %d\n", sensor_data.length2);
-                        printf("Value_temperature2: %02d.%02d\n", (sensor_data.value_temperature2)/10, (sensor_data.value_temperature2)%10);
-                        printf("Value_humidity2: %02d.%02d\n", (sensor_data.value_humidity2)/10, (sensor_data.value_humidity2)%10);
+                        memcpy(&sensors.temperature, &ua2.u16_var, sizeof(int16_t)); 
+                    
+
+                        ua2.temp_array[0] = buf[3];
+                        ua2.temp_array[1] = buf[4];
+                        memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
+                    
+                        ua.temp_array[0] = buf[5];
+                        ua.temp_array[1] = buf[6];
+                        ua.temp_array[2] = buf[7];
+                        ua.temp_array[3] = buf[8];
+
+                        memcpy(&sensors.noise, &ua.u32_var, sizeof(uint32_t));
+
+                    
+                        printf("{\"nodeID\": %d", buf[0] & 0b00011111);
+                        printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
+                        printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
+                        printf(",\"Noise\": %lu", sensors.noise);
+                        printf("}\n");
+
                     
                         break;
                         

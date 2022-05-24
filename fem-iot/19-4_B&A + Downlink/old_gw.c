@@ -9,9 +9,6 @@
 #include "sys/clock.h"
 #include <stdlib.h>
 
-#include "dev/leds.h"
-#include "dev/uart.h"
-#include "dev/serial-line.h"
 
 #include "sys/log.h"
 
@@ -30,8 +27,8 @@
 #define NODEID_PM10_2 8
 
 
-
-typedef struct sensor_dataold_t {
+//placeholder struct for the data of the sensors: 
+typedef struct sensor_data_t {
   uint8_t nodeid;
   int16_t humidity;
   int16_t temperature;
@@ -40,27 +37,8 @@ typedef struct sensor_dataold_t {
   float o3;
   float co;
   float no2;
-} sensor_dataold_t;
-static sensor_dataold_t sensors;
-
-typedef struct sensor_data_t {  
-          uint8_t id1;
-          uint8_t length1;
-          int16_t value_temperature1;
-          int16_t value_humidity1;
-
-          uint8_t id2;
-          uint8_t length2;
-          int16_t value_temperature2;
-          int16_t value_humidity2;
-          
-          } sensor_data_t;
-
-static struct sensor_data_t sensor_data;
-
-
-
-
+} sensor_data_t;
+static sensor_data_t sensors;
 static uint16_t cb_len;
 static linkaddr_t from; 
 
@@ -80,19 +58,12 @@ static linkaddr_t from;
 
 #define ROUTENUMBER 8 //for now, then it should be bigger
 
-
-static char *rxdata;
-static uint8_t bitmask;
-
-static uint16_t lost_message_counter = 0;
-static bool poll_response_received = 0; 
 static linkaddr_t addr_stas[ROUTENUMBER]; //store sta's addresses in here, for routing and sending
 static linkaddr_t buffer_addr; 
-
 const linkaddr_t addr_empty = {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}; //placeholder address
 
 #define SPEED_NW 1 //Speed >1 if we want faster beacons and times ( for debugging "quicker" without changing too much code)
-//#define SEND_INTERVAL (220 * CLOCK_SECOND * (1/SPEED_NW))
+#define SEND_INTERVAL (220 * CLOCK_SECOND * (1/SPEED_NW))
 #define BEACON_INTERVAL (60* CLOCK_SECOND * (1/SPEED_NW))
 #define T_MM (10* CLOCK_SECOND  * 1/SPEED_NW)
 #define T_GUARD (0.5 * CLOCK_SECOND * 1/SPEED_NW)
@@ -103,17 +74,20 @@ const linkaddr_t addr_empty = {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}
 #define f_DATA 0x02
 #define f_ENERGEST 0x03
 
+
 //static uint8_t *buf;
 uint8_t global_buffer[20];
+
 /*---------------------------------------------------------------------------*/
+
 PROCESS(coordinator_process, "fem-iot coordinator process");
 //PROCESS(beacon_process, "beacon process");
-PROCESS(serial_process, "Serial process");
-//PROCESS(parser_process, "Parsing process");
+
+PROCESS(parser_process, "Parsing process");
 PROCESS(association_process, "Association process");
 PROCESS(callback_process,"Callback process");
 
-AUTOSTART_PROCESSES(&coordinator_process,&association_process , &callback_process, &serial_process);
+AUTOSTART_PROCESSES(&coordinator_process, &parser_process, &association_process, &callback_process);
 
 /*---------------------------------------------------------------------------*/
 
@@ -130,6 +104,7 @@ void input_callback(const void *data, uint16_t len,
 }
 
 
+
 /*--------------------------------------------------------------------------------*/
 
 PROCESS_THREAD(coordinator_process, ev,data)
@@ -139,7 +114,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
     static struct etimer mm_timer;
     static struct etimer beacon_timer;
 
-    
+    static uint8_t bitmask;
     static uint8_t beaconbuf[3];
 
     static clock_time_t t;
@@ -168,14 +143,12 @@ PROCESS_THREAD(coordinator_process, ev,data)
 
     while(1)
     {
-        LOG_DBG("Bitmask is %d\n", bitmask);
-        printf("AA0\n"); //NODE-RED HEARTBEAT
-        printf("LMC,%d",lost_message_counter);
+    
         etimer_set(&beacon_timer, BEACON_INTERVAL); //set the timer for the next interval
         
         static uint8_t i;
-
-        for (i= 0; i<3; i++) 
+        bitmask = 0xFF;
+        for (i= 0; i<3; i++)
         {
             beaconbuf[1] = bitmask; 
            
@@ -192,7 +165,7 @@ PROCESS_THREAD(coordinator_process, ev,data)
             }
         }
         
-        etimer_set(&mm_timer, T_MM); /// T_MDB wait
+        etimer_set(&mm_timer, T_MM); //set the timer for the next interval
         
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&mm_timer));
 
@@ -211,37 +184,13 @@ PROCESS_THREAD(coordinator_process, ev,data)
 
                 dt = clock_time() - t;
                 LOG_INFO("polling node %d, dt: %lu\n", i, dt/CLOCK_SECOND);
-               
-               NETSTACK_NETWORK.output(NULL); //POLLING IS BROADCAST, SHOULD BE UNICAST??
-
-                
+                NETSTACK_NETWORK.output(NULL);
                 
                 etimer_set(&periodic_timer, T_SLOT); //set the timer for the next interval
                 PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-                
-                if(!poll_response_received){
-                    
-                    LOG_INFO("polling node %d, no response!! TRYING AGAIN \n", i);
-
-                    // HERE, TRY AGAIN? 
-                    NETSTACK_NETWORK.output(NULL);; 
-                }
 
                 etimer_set(&periodic_timer, T_GUARD);
                 PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-                if(!poll_response_received){
-
-                    if(i<3){ //if we are in the first 3 nodes, account for error ( ONLY FOR TEST WITH 3 NODES)
-
-                        LOG_INFO("ERROR: POLL no RESPONSE!!\n");
-                        lost_message_counter ++;
-                    }
-                    else{
-                        LOG_INFO("no response(EXPECTED) \n");
-                    }
-                   
-                }
-                poll_response_received = 0;
 
 
            }
@@ -258,9 +207,13 @@ PROCESS_THREAD(coordinator_process, ev,data)
               }
         }
         LOG_INFO("Polling finished\n");
-      
+        
+
+
          //if we need to change bitmask for next loop, do it here      
          //also use this time for uplink and downlink extra communications
+
+
 
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&beacon_timer));
         
@@ -272,6 +225,165 @@ PROCESS_THREAD(coordinator_process, ev,data)
 }
 
 /*-----------------------------------------------------------------------------------------*/
+
+
+
+
+PROCESS_THREAD( parser_process, ev, data)
+{
+    PROCESS_BEGIN();
+
+
+    uint32_t fbuf; //float buffer
+    union {
+        float float_variable;
+        uint8_t temp_array[4];
+        } u;
+  
+    union{
+        uint32_t u32_var;
+        uint8_t temp_array[4];
+        } ua;
+
+    union{
+        int16_t u16_var;
+        uint8_t temp_array[2];
+        } ua2;
+
+
+    //variables
+    while(1){
+
+        PROCESS_YIELD();
+
+        PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+
+        uint8_t *parsebuf = malloc(cb_len);
+        parsebuf = packetbuf_dataptr(); //THIS NEEDS TO BE TESTED
+        /* 
+        Alternatives:
+            memcpy(parsebuf,data,len); //Do this on the callback
+
+
+        */
+        printf("PARSING\n");
+        //switch(buf[0] & 31){
+        switch(parsebuf[0]& 0b00011111) //last 5 bits of the first byte is for NodeID?
+        {
+            case NODEID_MGAS1:
+            case NODEID_MGAS2:
+                        
+            u.temp_array[0] = parsebuf[1];
+            u.temp_array[1] = parsebuf[2];
+            u.temp_array[2] = parsebuf[3];
+            u.temp_array[3] = parsebuf[4];
+            sensors.co = u.float_variable;
+           
+
+            u.temp_array[0] = parsebuf[5];
+            u.temp_array[1] = parsebuf[6];
+            u.temp_array[2] = parsebuf[7];
+            u.temp_array[3] = parsebuf[8];
+            sensors.no2 = u.float_variable;
+
+
+            printf("{\"nodeID\": %d", parsebuf[0]);
+            printf(",\"co\": ");
+            fbuf = sensors.co * 100;
+            printf("%lu.%02lu", fbuf/100, fbuf%100);
+            printf(", \"no2\": ");
+            fbuf = sensors.no2 * 100;
+            printf("%lu.%02lu", fbuf/100, fbuf%100);
+            printf("}\n");    
+            break;
+
+
+
+        case NODEID_DHT22_1:
+        case NODEID_DHT22_2:
+        
+
+            ua2.temp_array[0] = parsebuf[1];
+            ua2.temp_array[1] = parsebuf[2];
+            
+            memcpy(&sensors.temperature, &ua2.u16_var, sizeof(int16_t)); 
+        
+
+            ua2.temp_array[0] = parsebuf[3];
+            ua2.temp_array[1] = parsebuf[4];
+            memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
+        
+            ua.temp_array[0] = parsebuf[5];
+            ua.temp_array[1] = parsebuf[6];
+            ua.temp_array[2] = parsebuf[7];
+            ua.temp_array[3] = parsebuf[8];
+
+            memcpy(&sensors.noise, &ua.u32_var, sizeof(uint32_t));
+
+           
+            printf("{\"nodeID\": %d", parsebuf[0]);
+            printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
+            printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
+            printf(",\"Noise\": %lu", sensors.noise);
+            printf("}\n");
+
+           
+            break;
+            
+        case NODEID_O3_1:
+        case NODEID_O3_2:
+            
+            ua2.temp_array[0] = parsebuf[1];
+            ua2.temp_array[1] = parsebuf[2];
+            
+            memcpy(&sensors.temperature, &ua2.u16_var, sizeof(int16_t)); 
+        
+
+            ua2.temp_array[0] = parsebuf[3];
+            ua2.temp_array[1] = parsebuf[4];
+            memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
+
+            u.temp_array[0] = parsebuf[5];
+            u.temp_array[1] = parsebuf[6];
+            u.temp_array[2] = parsebuf[7];
+            u.temp_array[3] = parsebuf[8];
+            
+           
+            memcpy(&sensors.o3, &u.float_variable, sizeof(float));
+            fbuf = sensors.o3 * 100;
+            
+
+
+            printf("{\"nodeID\": %d", parsebuf[0]);
+            printf(",\"ppm\": ");
+            printf("%lu.%02lu", fbuf/100, fbuf%100);
+           
+            printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
+            printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
+            printf("}\n");
+            break;
+        case NODEID_PM10_1:
+        case NODEID_PM10_2:
+           
+            sensors.pm10 = (parsebuf[2] << 8) | parsebuf[1];
+            printf("{\"nodeID\": %d", parsebuf[0]);
+            printf(",\"pm10\": %d", sensors.pm10);
+            printf("}\n");
+            break;
+            //AOK!!
+        
+        default:
+            /*printf("unknown nodeID %d\n", parsebuf[0]);
+            printf("BYTES copied are: ");
+            for (int i = 0; i < len; i++) {
+            printf("%d ", parsebuf[i]);
+            */        
+            break;
+        } //switch
+    } //while
+    PROCESS_END();
+
+}
 
 
 PROCESS_THREAD(association_process,ev,data){
@@ -331,61 +443,89 @@ PROCESS_THREAD(association_process,ev,data){
     PROCESS_END();
 }
 
-
 PROCESS_THREAD(callback_process,ev,data){
 
-    uint32_t fbuf; //float buffer
+     uint32_t fbuf; //float buffer
     union {
         float float_variable;
         uint8_t temp_array[4];
         } u;
   
-    /*    union{
+    union{
         uint32_t u32_var;
         uint8_t temp_array[4];
         } ua;
-    */
+
     union{
         int16_t u16_var;
         uint8_t temp_array[2];
         } ua2;
-    
-    static uint8_t frame; 
-    static uint8_t *buf; 
+    uint8_t *buf;
+    uint8_t frame; 
     PROCESS_BEGIN();
-
+    //PROCESS_YIELD();
 
     while(1) {      
-
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-        
-
-        //buf = (uint8_t*)malloc(cb_len);
-        buf = packetbuf_dataptr(); //THIS NEEDS TO BE TESTED
-
-        LOG_DBG("buf %d %d %d\n", buf[0], buf[1], buf[2]);
+        //buf = (uint8_t *)malloc(cb_len);
+        buf = packetbuf_dataptr();
         frame = (buf[0] & 0b11100000)>>5;
-        
+        /*                  
+        switch ((buf[0] & 224) >> 5 ) { //check the first 3 bits of the first byte
+
+            case 0:
+                LOG_INFO("Beacon received ??\n"); //this is only for stas to hear
+                break;
+
+            case 1:
+                LOG_INFO("Association request received\n");
+                linkaddr_copy(&buffer_addr, &from );
+                process_poll(&association_process);    
+                break;
+
+            case 2:
+                LOG_INFO("Association response received ??\n"); //this is only for stas to hear
+                break;
+
+            case 3: 
+                LOG_INFO("Poll request received ?? \n"); //this is only for stas to hear
+                break;
+
+            case 4:
+                LOG_INFO("Sensor Data received\n");
+                process_poll(&parser_process);
+                break;          
+
+            case 5: 
+                LOG_INFO("Energest Data received\n");
+                //Are we going to use this really? Maybe checking the consumptions in the lab through serial monitor
+                //should be enough for making a model, since the network is "deterministic" 
+                break;
+
+            default:
+                LOG_INFO("Unknown packet received\n");
+       
+                      break;
+        }
+        */
         if (frame == 0){
-            LOG_DBG("Beacon received ??\n %d %d %d \n", buf[0], buf[1], buf[2]);
-            LOG_INFO_LLADDR(&from);
-            LOG_DBG("\n");
+            LOG_DBG("Beacon received ??\n");
         }
         else if( frame ==1){
-            LOG_DBG("Association request received (NOT ASSOCIATING )\n");
+            LOG_DBG("Association request received\n");
             linkaddr_copy(&buffer_addr, &from );
             process_poll(&association_process);     
         }
         else if( frame ==2){
-            LOG_DBG("Association response received (!?)\n");
+            LOG_DBG("Association response received ??\n");
         }
         else if( frame ==3){
-            LOG_DBG("Poll request received (!?) \n");
+            LOG_DBG("Poll request received ?? \n");
         }
         else if( frame ==4){
             LOG_DBG("Sensor Data received\n");
             //process_poll(&parser_process);
-                    poll_response_received = 1; //we received a poll response
+                   
                     printf("PARSING\n");
                     //switch(buf[0] & 31){
                     switch(buf[0] & 0b00011111) //last 5 bits of the first byte is for NodeID?
@@ -423,25 +563,30 @@ PROCESS_THREAD(callback_process,ev,data){
                     case NODEID_DHT22_2:
                     
 
-                        memcpy(&sensor_data.id1, &buf[0], sizeof(buf[0]));
-                        memcpy(&sensor_data.length1, &buf[1], sizeof(buf[1]));
-                        memcpy(&sensor_data.value_temperature1, &buf[2], sizeof(buf[2]));
-                        memcpy(&sensor_data.value_humidity1, &buf[4], sizeof(buf[4]));
-                    
-                        memcpy(&sensor_data.id2, &buf[6], sizeof(buf[6]));
-                        memcpy(&sensor_data.length2, &buf[7], sizeof(buf[7]));
-                        memcpy(&sensor_data.value_temperature2, &buf[8], sizeof(buf[8]));
-                        memcpy(&sensor_data.value_humidity2, &buf[10], sizeof(buf[10]));
-
-                        printf("ID1: %d\n", sensor_data.id1);
-                        printf("Length1: %d\n", sensor_data.length1);
-                        printf("Value_temperature1: %02d.%02d\n", (sensor_data.value_temperature1)/10, (sensor_data.value_temperature1)%10);
-                        printf("Value_humidity1: %02d.%02d\n", (sensor_data.value_humidity1)/10, (sensor_data.value_humidity1)%10);
+                        ua2.temp_array[0] = buf[1];
+                        ua2.temp_array[1] = buf[2];
                         
-                        printf("ID2: %d\n", sensor_data.id2);
-                        printf("Length2: %d\n", sensor_data.length2);
-                        printf("Value_temperature2: %02d.%02d\n", (sensor_data.value_temperature2)/10, (sensor_data.value_temperature2)%10);
-                        printf("Value_humidity2: %02d.%02d\n", (sensor_data.value_humidity2)/10, (sensor_data.value_humidity2)%10);
+                        memcpy(&sensors.temperature, &ua2.u16_var, sizeof(int16_t)); 
+                    
+
+                        ua2.temp_array[0] = buf[3];
+                        ua2.temp_array[1] = buf[4];
+                        memcpy(&sensors.humidity, &ua2.u16_var, sizeof(int16_t));
+                    
+                        ua.temp_array[0] = buf[5];
+                        ua.temp_array[1] = buf[6];
+                        ua.temp_array[2] = buf[7];
+                        ua.temp_array[3] = buf[8];
+
+                        memcpy(&sensors.noise, &ua.u32_var, sizeof(uint32_t));
+
+                    
+                        printf("{\"nodeID\": %d", buf[0] & 0b00011111);
+                        printf(",\"Humidity\": %d.%d", sensors.humidity/10, sensors.humidity%10);
+                        printf(",\"Temperature\": %d.%d", sensors.temperature/10, sensors.temperature%10);
+                        printf(",\"Noise\": %lu", sensors.noise);
+                        printf("}\n");
+
                     
                         break;
                         
@@ -509,56 +654,4 @@ PROCESS_THREAD(callback_process,ev,data){
     
     } //while      
     PROCESS_END();
-}
-
-PROCESS_THREAD(serial_process, ev, data)
-{
-  
-  PROCESS_BEGIN();
-  uart_set_input(0, serial_line_input_byte);
-  leds_toggle(LEDS_GREEN);
-
-  while(1) {
-    PROCESS_YIELD();                           // Surt del procés temporalment, fins que arribi un event/poll
-    
-    if(ev == serial_line_event_message) {      // Si l'event indica que ha arribat un missatge UART
-      leds_toggle(LEDS_RED);
-      rxdata = data;                           // Guardem el missatge a rxdata
-      LOG_DBG("Data received over UART: %s\n", rxdata);    //Mostrem el missatge rebut.
-      leds_toggle(LEDS_RED); 
-
-      char buffer_header[30];
-      strcpy(buffer_header, rxdata);
-      LOG_DBG("buffer header: %s\n", buffer_header);
-      char *header; 
-      header = strtok(buffer_header, ",");
-      LOG_DBG("header: %s\n", header);
-
-
-
-    if (strcmp(header, "BM") == 0) { //If we received a new BM from the GW
-        
-        
-        char *token = strtok(NULL, ",");
-        uint8_t buf_bitmask = 0;
-
-        if(token != NULL) { //only once
-            
-            LOG_DBG("token: %s\n", token);
-            buf_bitmask = atoi(token);
-
-            LOG_DBG("bitmask value (serial): %d\n", buf_bitmask);
-            bitmask = buf_bitmask; //store received bitmask for next cycle
-            
-
-        }   
-        else{
-            LOG_ERR("Error parsing bitmask\n");
-        }
-    }    
-   }
-    
-  }
-
-  PROCESS_END();
 }
