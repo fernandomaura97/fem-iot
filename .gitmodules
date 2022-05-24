@@ -37,6 +37,3 @@
 [submodule "arch/cpu/nrf/lib/nrfx"]
 	path = arch/cpu/nrf/lib/nrfx
 	url = https://github.com/NordicSemiconductor/nrfx.git
-[submodule "examples"]
-	path = examples
-	url = ./examples
